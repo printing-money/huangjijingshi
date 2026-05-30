@@ -102,7 +102,7 @@ def tieban_paipan(req: TiebanRequest):
             'hexagram': result.hexagram,
             'houtian_num': result.houtian_num,
         },
-        'liunian': result.liunian[:20],
+        'liunian': result.liunian,
         'liunian_count': len(result.liunian),
     }
 

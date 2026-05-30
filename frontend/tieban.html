@@ -55,6 +55,13 @@ h1 { text-align: center; font-size: 1.6rem; color: #e8a838; letter-spacing: 0.3e
 .liunian-table .age { color: #e8a838; font-weight: bold; min-width: 35px; }
 .liunian-table .gz { color: #4ecdc4; min-width: 40px; }
 .liunian-table .duanyu { color: #ccc; line-height: 1.5; }
+
+.age-btn {
+  padding: 0.3rem 0.7rem; font-size: 0.75rem; border: 1px solid #444;
+  background: #0f1923; color: #8899aa; border-radius: 4px; cursor: pointer;
+}
+.age-btn:hover { border-color: #e8a838; color: #e8a838; }
+.age-btn.active { background: #e8a838; color: #000; border-color: #e8a838; }
 </style>
 </head>
 <body>
@@ -150,6 +157,10 @@ function renderResult(data) {
   const c = data.calculation;
   const input = data.input;
 
+  // 计算当前年龄
+  const birthYear = parseInt(input.birth_time.split('-')[0]);
+  const currentAge = new Date().getFullYear() - birthYear;
+
   let html = `
     <h2>📜 排盘结果</h2>
     <div class="bazi-display">
@@ -164,23 +175,48 @@ function renderResult(data) {
       <div class="calc-item"><div class="label">考刻</div><div class="value">${c.moment}</div></div>
     </div>
 
-    <h2 style="margin-top:1.5rem;">📖 流年条文</h2>
-    <table class="liunian-table">
+    <h2 style="margin-top:1.5rem;">📖 流年条文 <span style="font-size:0.75rem;color:#8899aa;font-weight:normal;">（共${data.liunian_count}年）</span></h2>
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;flex-wrap:wrap;">
+      <button class="age-btn" onclick="showAgeRange(1,30)">1-30岁</button>
+      <button class="age-btn" onclick="showAgeRange(31,60)">31-60岁</button>
+      <button class="age-btn" onclick="showAgeRange(61,100)">61-100岁</button>
+      <button class="age-btn active" onclick="showAgeRange(1,100)">全部</button>
+      ${currentAge > 0 ? '<button class="age-btn" onclick="showAgeRange('+(currentAge-2)+','+(currentAge+5)+')">当前±</button>' : ''}
+    </div>
+    <table class="liunian-table" id="liunianTable">
       <tr><th>岁</th><th>干支</th><th>断词</th></tr>
   `;
 
   for (const l of data.liunian) {
     const duanyu = l.duanyu || '<span style="color:#555">—</span>';
-    html += `<tr><td class="age">${l.age}</td><td class="gz">${l.ganzhi}</td><td class="duanyu">${duanyu}</td></tr>`;
+    const isCurrent = (l.age === currentAge);
+    const highlight = isCurrent ? 'style="background:rgba(232,168,56,0.1);border-left:3px solid #e8a838;"' : '';
+    html += `<tr class="ln-row" data-age="${l.age}" ${highlight}><td class="age">${l.age}${isCurrent?'★':''}</td><td class="gz">${l.ganzhi}</td><td class="duanyu">${duanyu}</td></tr>`;
   }
   html += '</table>';
-  if (data.liunian_count > data.liunian.length) {
-    html += `<p style="color:#8899aa;font-size:0.75rem;margin-top:0.8rem;text-align:center;">显示前${data.liunian.length}年，共${data.liunian_count}年流年</p>`;
-  }
 
   content.innerHTML = html;
   panel.classList.add('show');
   panel.scrollIntoView({ behavior: 'smooth' });
+
+  // 默认显示全部，高亮当前年龄行
+  if (currentAge > 0 && currentAge <= 100) {
+    setTimeout(() => {
+      const row = document.querySelector(`tr[data-age="${currentAge}"]`);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+}
+
+function showAgeRange(start, end) {
+  const rows = document.querySelectorAll('.ln-row');
+  rows.forEach(row => {
+    const age = parseInt(row.dataset.age);
+    row.style.display = (age >= start && age <= end) ? '' : 'none';
+  });
+  // 更新按钮状态
+  document.querySelectorAll('.age-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
 }
 </script>
 </body>
