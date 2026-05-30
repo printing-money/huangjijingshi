@@ -43,11 +43,20 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    """首页 - 返回前端可视化界面"""
+    """首页 - 大众版（白话解读）"""
     index_file = FRONTEND_DIR / "index.html"
     if index_file.exists():
         return index_file.read_text(encoding="utf-8")
     return HTMLResponse("<h1>皇极经世推演系统</h1><p>前端文件未找到，请访问 <a href='/docs'>/docs</a> 查看 API 文档</p>")
+
+
+@app.get("/pro", response_class=HTMLResponse)
+def pro():
+    """专业版（完整数据展示）"""
+    pro_file = FRONTEND_DIR / "pro.html"
+    if pro_file.exists():
+        return pro_file.read_text(encoding="utf-8")
+    return HTMLResponse("<h1>专业版未找到</h1>")
 
 
 @app.get("/api")

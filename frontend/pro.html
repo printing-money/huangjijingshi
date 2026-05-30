@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>皇极经世 · 专业推演</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Serif SC', 'SimSun', serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+nav { background: #0f1923; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid #333; }
+nav .brand { color: #e8a838; font-size: 1rem; font-weight: bold; text-decoration: none; }
+nav a { color: #8899aa; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 4px; }
+nav a:hover, nav a.active { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+
+.header {
+  text-align: center; padding: 2rem;
+  background: linear-gradient(135deg, #16213e, #0f3460);
+  border-bottom: 2px solid #e94560;
+}
+.header h1 { font-size: 1.6rem; color: #f5f5dc; letter-spacing: 0.3em; }
+.header p { color: #aaa; margin-top: 0.5rem; font-size: 0.85rem; }
+
+.controls {
+  display: flex; gap: 0.8rem; justify-content: center;
+  padding: 1.2rem; flex-wrap: wrap; background: #16213e;
+}
+.controls input, .controls select, .controls button {
+  padding: 0.4rem 0.8rem; border: 1px solid #444;
+  background: #0f3460; color: #e0e0e0;
+  border-radius: 4px; font-size: 0.85rem;
+}
+.controls button { background: #e94560; border-color: #e94560; cursor: pointer; font-weight: bold; }
+.controls button:hover { background: #c73e54; }
+
+.main { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+
+.panel { background: #16213e; border-radius: 8px; padding: 1.2rem; border: 1px solid #333; }
+.panel h2 { font-size: 1rem; color: #f5f5dc; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 0.8rem; }
+.panel.full { grid-column: 1 / -1; }
+
+.chain-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.6rem; }
+.chain-item { background: #0f3460; border-radius: 6px; padding: 0.6rem; text-align: center; border: 1px solid #333; }
+.chain-item .level { font-size: 0.65rem; color: #888; }
+.chain-item .hex-symbol { font-size: 1.8rem; margin: 0.2rem 0; }
+.chain-item .hex-name { font-size: 0.8rem; color: #f5f5dc; }
+.chain-item .hex-info { font-size: 0.65rem; color: #666; margin-top: 0.2rem; }
+
+.timeline-bar { display: flex; align-items: stretch; gap: 2px; height: 50px; margin: 0.8rem 0; }
+.timeline-cell {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 3px; cursor: pointer; font-size: 0.7rem; min-width: 25px;
+}
+.timeline-cell:hover { transform: scaleY(1.1); }
+.timeline-cell .year-label { font-size: 0.55rem; color: #888; }
+
+.data-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #222; text-align: left; }
+.data-table th { color: #e8a838; font-weight: normal; }
+
+.trend-node { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid #222; font-size: 0.8rem; }
+.trend-node .year { font-weight: bold; color: #e94560; min-width: 45px; }
+.trend-node .tag { font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; background: #333; color: #4ecdc4; }
+
+.loading { text-align: center; padding: 1.5rem; color: #888; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">皇极经世</a>
+  <a href="/">大众版</a>
+  <a href="/pro" class="active">专业版</a>
+  <a href="/docs">API文档</a>
+</nav>
+
+<div class="header">
+  <h1>皇 极 经 世 推 演</h1>
+  <p>元会运世 · 九层卦象 · 分形同构 · 专业模式</p>
+</div>
+
+<div class="controls">
+  <input type="number" id="yearInput" value="2026" min="-3000" max="3000" placeholder="年">
+  <input type="number" id="monthInput" value="5" min="1" max="12" placeholder="月">
+  <input type="number" id="dayInput" value="30" min="1" max="30" placeholder="日">
+  <input type="number" id="hourInput" value="14" min="0" max="23" placeholder="时">
+  <button onclick="queryAll()">推演</button>
+  <button onclick="queryTimeline()" style="background:#4ecdc4;">时间线</button>
+  <button onclick="queryTrend()" style="background:#f5a623;">趋势</button>
+  <button onclick="queryHistory()" style="background:#9b59b6;">历史验证</button>
+</div>
+
+<div class="main">
+  <!-- 卦象链 -->
+  <div class="panel full">
+    <h2>☰ 九层卦象链</h2>
+    <div class="chain-grid" id="chainGrid"><div class="loading">点击"推演"开始</div></div>
+  </div>
+
+  <!-- 坐标信息 -->
+  <div class="panel">
+    <h2>📐 皇极坐标</h2>
+    <div id="coordInfo"><div class="loading">—</div></div>
+  </div>
+
+  <!-- 五行分析 -->
+  <div class="panel">
+    <h2>☯ 五行·阴阳</h2>
+    <div id="wuxingInfo"><div class="loading">—</div></div>
+  </div>
+
+  <!-- 时间线 -->
+  <div class="panel full">
+    <h2>📅 岁卦时间线</h2>
+    <div id="timelineContent"><div class="loading">点击"时间线"加载</div></div>
+  </div>
+
+  <!-- 趋势 -->
+  <div class="panel">
+    <h2>📈 趋势推演</h2>
+    <div id="trendContent" style="max-height:300px;overflow-y:auto;"><div class="loading">点击"趋势"加载</div></div>
+  </div>
+
+  <!-- 历史 -->
+  <div class="panel">
+    <h2>📜 历史验证</h2>
+    <div id="historyContent" style="max-height:300px;overflow-y:auto;"><div class="loading">点击"历史验证"加载</div></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+function yangColor(n) {
+  const c = ['#1a1a2e','#2d1b69','#4a1942','#c73e54','#e94560','#ff6b6b','#ffd93d'];
+  return c[n]||'#333';
+}
+
+async function queryAll() {
+  const year=+document.getElementById('yearInput').value, month=+document.getElementById('monthInput').value;
+  const day=+document.getElementById('dayInput').value, hour=+document.getElementById('hourInput').value;
+
+  const resp = await fetch(`${API}/api/hexagram/datetime`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,month,day,hour})});
+  const data = await resp.json();
+
+  // 卦象链
+  const layers=[{key:'yuan',label:'元(129600年)'},{key:'hui',label:'会(10800年)'},{key:'yun',label:'运(360年)'},{key:'shi',label:'世(30年)'},{key:'ten_year',label:'十年律卦'},{key:'sui',label:'岁(1年)'},{key:'yue_jing',label:'月经(60天)'},{key:'xun_wei',label:'旬纬(10天)'},{key:'ri',label:'日(1天)'},{key:'shi_jing',label:'时经(2时辰)'}];
+  let html='';
+  for(const l of layers){const h=data[l.key];if(!h)continue;html+=`<div class="chain-item" style="border-color:${yangColor(h.yang_count)}"><div class="level">${l.label}</div><div class="hex-symbol">${h.unicode}</div><div class="hex-name">${h.name}</div><div class="hex-info">${h.upper}/${h.lower} 阳${h.yang_count}</div></div>`;}
+  document.getElementById('chainGrid').innerHTML=html;
+
+  // 坐标
+  const c=data.coordinate;
+  document.getElementById('coordInfo').innerHTML=`<table class="data-table"><tr><th>会</th><td>第${c.hui}会</td></tr><tr><th>运</th><td>第${c.yun}运 (全元第${c.global_yun}运)</td></tr><tr><th>世</th><td>第${c.shi}世 (全元第${c.global_shi}世)</td></tr><tr><th>岁</th><td>第${c.sui}年</td></tr><tr><th>皇极年</th><td>${c.huangji_year}</td></tr><tr><th>公历</th><td>${c.gregorian_year}年</td></tr></table>`;
+
+  // 五行
+  const aiResp=await fetch(`${API}/api/ext/ai/interpret/${year}?month=${month}&day=${day}`);
+  const ai=await aiResp.json();
+  const wx=ai.wuxing_analysis.sui;
+  document.getElementById('wuxingInfo').innerHTML=`<table class="data-table"><tr><th>岁卦</th><td>${ai.hexagram_chain.sui}</td></tr><tr><th>五行</th><td>${wx.description}</td></tr><tr><th>关系</th><td>${wx.relation} — ${wx.harmony}</td></tr><tr><th>阴阳</th><td>${ai.yin_yang_state}</td></tr><tr><th>运卦</th><td>${ai.hexagram_chain.yun}</td></tr><tr><th>世卦</th><td>${ai.hexagram_chain.shi}</td></tr></table>`;
+}
+
+async function queryTimeline() {
+  const year=+document.getElementById('yearInput').value;
+  const resp=await fetch(`${API}/api/hexagram/timeline/${year-20}/${year+20}?step=1`);
+  const data=await resp.json();
+  let html='<div class="timeline-bar">';
+  for(const item of data.data){
+    const isCur=item.year===year;
+    html+=`<div class="timeline-cell" style="background:${yangColor(item.hexagram.yang_count)};${isCur?'box-shadow:0 0 0 2px #ffd93d;':''}" title="${item.year}(${item.ganzhi}) ${item.hexagram.unicode}${item.hexagram.name}"><span>${item.hexagram.unicode}</span><span class="year-label">${item.year%5===0||isCur?item.year:''}</span></div>`;
+  }
+  html+='</div><p style="font-size:0.7rem;color:#666;">色深=阳气强 | 金框=当前年 | 悬停查看详情</p>';
+  document.getElementById('timelineContent').innerHTML=html;
+}
+
+async function queryTrend() {
+  const year=+document.getElementById('yearInput').value;
+  const resp=await fetch(`${API}/api/analysis/trend/${year}?years=60`);
+  const data=await resp.json();
+  let html=`<p style="font-size:0.85rem;margin-bottom:0.8rem;color:#f5f5dc;">${data.overall_trend}</p>`;
+  if(data.key_years.length)html+=`<p style="font-size:0.8rem;color:#e8a838;margin-bottom:0.5rem;">关键年份: ${data.key_years.join(', ')}</p>`;
+  for(const n of data.nodes){html+=`<div class="trend-node"><span class="year">${n.year}</span><span class="tag">${n.level}</span><span>${n.description}</span></div>`;}
+  document.getElementById('trendContent').innerHTML=html;
+}
+
+async function queryHistory() {
+  const year=+document.getElementById('yearInput').value;
+  const resp=await fetch(`${API}/api/history/similar/${year}`);
+  const data=await resp.json();
+  let html=`<p style="font-size:0.8rem;color:#f5f5dc;margin-bottom:0.5rem;">与${year}年卦象相似的历史时期：</p>`;
+  for(const s of data.similar_periods){html+=`<div class="trend-node"><span class="year">${s.year}</span><span class="tag">${s.event_type}</span><span>${s.name} (匹配${s.matches}层)</span></div>`;}
+  if(!data.similar_periods.length)html+='<p style="color:#666;">无匹配结果</p>';
+  document.getElementById('historyContent').innerHTML=html;
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  document.getElementById('yearInput').value=now.getFullYear();
+  document.getElementById('monthInput').value=now.getMonth()+1;
+  document.getElementById('dayInput').value=now.getDate();
+  document.getElementById('hourInput').value=now.getHours();
+});
+</script>
+</body>
+</html>
