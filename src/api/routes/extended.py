@@ -1,10 +1,11 @@
 """
-扩展 API 路由：卦辞解读、声音唱和、AI 解读
+扩展 API 路由：卦辞解读、声音唱和、AI 解读、音频合成
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
+from fastapi.responses import Response
 from typing import Optional
 
 from ...core.hexagram import get_hexagram_by_name
@@ -102,6 +103,77 @@ def get_lvlv_system():
             for lv in TWELVE_LVLV
         ]
     }
+
+
+# === AI 解读 ===
+
+# === 音频合成 ===
+
+@router.get("/audio/lv/{lv_name}")
+def get_lv_audio(lv_name: str, duration: float = Query(default=1.5, ge=0.3, le=5.0)):
+    """播放单个律吕的音频（WAV格式）"""
+    from ...core.audio import generate_lv_tone, ToneConfig, TWELVE_LVLV
+
+    lv = None
+    for l in TWELVE_LVLV:
+        if l.name == lv_name:
+            lv = l
+            break
+    if not lv:
+        return Response(content=b'', status_code=404)
+
+    config = ToneConfig(duration=duration)
+    wav_data = generate_lv_tone(lv, config)
+    return Response(content=wav_data, media_type='audio/wav')
+
+
+@router.get("/audio/daily")
+def get_daily_audio(
+    year: int = Query(...),
+    month: int = Query(..., ge=1, le=12),
+    day: int = Query(..., ge=1, le=31),
+):
+    """生成指定日期的四柱律吕序列音频（年→月→日→时）"""
+    from ...core.audio import generate_four_pillars_audio
+    from ...core.tiangan_dizhi import day_ganzhi_index, index_to_ganzhi, year_ganzhi, hour_to_shichen
+    from datetime import datetime
+
+    # 年干
+    ygz = year_ganzhi(year)
+    # 日干支
+    day_idx = day_ganzhi_index(year, month, day)
+    dgz = index_to_ganzhi(day_idx)
+    # 月支（简化：月份-1对应地支）
+    month_zhi = (month + 1) % 12  # 正月=寅(2)
+    # 时支（用当前小时）
+    hour_zhi = hour_to_shichen(datetime.now().hour)
+
+    wav_data = generate_four_pillars_audio(ygz.gan_index, month_zhi, dgz.gan_index, hour_zhi)
+    return Response(content=wav_data, media_type='audio/wav')
+
+
+@router.get("/audio/sequence")
+def get_sequence_audio(
+    lvs: str = Query(..., description="律吕名称序列，逗号分隔，如：黄钟,太簇,姑洗"),
+    duration: float = Query(default=0.8, ge=0.3, le=3.0),
+):
+    """生成自定义律吕序列音频"""
+    from ...core.audio import generate_sequence, ToneConfig, TWELVE_LVLV
+
+    lv_names = [n.strip() for n in lvs.split(',')]
+    lv_list = []
+    for name in lv_names:
+        for l in TWELVE_LVLV:
+            if l.name == name:
+                lv_list.append(l)
+                break
+
+    if not lv_list:
+        return Response(content=b'', status_code=400)
+
+    config = ToneConfig(duration=duration)
+    wav_data = generate_sequence(lv_list, gap=0.1, config=config)
+    return Response(content=wav_data, media_type='audio/wav')
 
 
 # === AI 解读 ===

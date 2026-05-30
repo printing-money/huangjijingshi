@@ -674,6 +674,14 @@ function renderToday(ai, chain) {
     <div style="margin-top:1rem;font-size:0.8rem;color:var(--text-dim);">
       ${ai.yin_yang_state}
     </div>
+
+    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:1rem;">
+      <button onclick="playDailyAudio()" style="padding:0.5rem 1rem;background:var(--accent2);color:#000;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:600;">
+        🔔 聆听今日律吕
+      </button>
+      <span style="font-size:0.75rem;color:var(--text-dim);">播放四柱律吕音序（年→月→日→时）</span>
+      <audio id="lvAudio" style="display:none;"></audio>
+    </div>
   `;
 }
 
@@ -760,6 +768,24 @@ function toggleTimeline() {
 function toggleTrend() {
   const el = document.getElementById('trendContent');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// === 音频播放 ===
+function playDailyAudio() {
+  const year = document.getElementById('yearInput').value;
+  const month = document.getElementById('monthInput').value;
+  const day = document.getElementById('dayInput').value;
+  const url = `${API}/api/ext/audio/daily?year=${year}&month=${month}&day=${day}`;
+
+  const audio = document.getElementById('lvAudio');
+  audio.src = url;
+  audio.play().catch(e => console.log('播放失败:', e));
+}
+
+function playLv(lvName) {
+  const audio = document.getElementById('lvAudio') || new Audio();
+  audio.src = `${API}/api/ext/audio/lv/${encodeURIComponent(lvName)}?duration=1.2`;
+  audio.play().catch(e => console.log('播放失败:', e));
 }
 
 // 页面加载自动推演今天
