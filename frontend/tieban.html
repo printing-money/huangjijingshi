@@ -184,14 +184,14 @@ function renderResult(data) {
       ${currentAge > 0 ? '<button class="age-btn" onclick="showAgeRange('+(currentAge-2)+','+(currentAge+5)+')">当前±</button>' : ''}
     </div>
     <table class="liunian-table" id="liunianTable">
-      <tr><th>岁</th><th>干支</th><th>断词</th></tr>
+      <tr><th>岁</th><th>年份</th><th>干支</th><th>断词</th></tr>
   `;
 
   for (const l of data.liunian) {
     const duanyu = l.duanyu || '<span style="color:#555">—</span>';
     const isCurrent = (l.age === currentAge);
     const highlight = isCurrent ? 'style="background:rgba(232,168,56,0.1);border-left:3px solid #e8a838;"' : '';
-    html += `<tr class="ln-row" data-age="${l.age}" ${highlight}><td class="age">${l.age}${isCurrent?'★':''}</td><td class="gz">${l.ganzhi}</td><td class="duanyu">${duanyu}</td></tr>`;
+    html += `<tr class="ln-row" data-age="${l.age}" ${highlight}><td class="age">${l.age}${isCurrent?'★':''}</td><td style="color:#888;font-size:0.8rem;">${l.year||''}</td><td class="gz">${l.ganzhi}</td><td class="duanyu">${duanyu}</td></tr>`;
   }
   html += '</table>';
 

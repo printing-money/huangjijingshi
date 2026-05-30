@@ -85,10 +85,16 @@ def tieban_paipan(req: TiebanRequest):
         is_leap=bazi_info['is_leap'],
     )
 
+    # 给流年加上公历年份
+    birth_year = dt.year
+    for item in result.liunian:
+        item['year'] = birth_year + item['age'] - 1
+
     return {
         'input': {
             'gender': req.gender,
             'birth_time': dt.strftime('%Y-%m-%d %H:%M'),
+            'birth_year': birth_year,
             'lunar': bazi_info['lunar_str'],
             'bazi': f"{bazi_info['year_gz']} {bazi_info['month_gz']} {bazi_info['day_gz']} {bazi_info['time_gz']}",
         },
