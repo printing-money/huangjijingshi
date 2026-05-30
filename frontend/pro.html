@@ -327,12 +327,19 @@ async function queryHistory() {
   document.getElementById('historyContent').innerHTML=html;
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const now=new Date();
-  document.getElementById('yearInput').value=now.getFullYear();
-  document.getElementById('monthInput').value=now.getMonth()+1;
-  document.getElementById('dayInput').value=now.getDate();
-  document.getElementById('hourInput').value=now.getHours();
+document.addEventListener('DOMContentLoaded', async ()=>{
+  let y,m,d,h;
+  try {
+    const resp = await fetch(`${API}/api`);
+    const info = await resp.json();
+    y=info.year; m=info.month; d=info.day; h=info.hour;
+  } catch(e) {
+    const now=new Date(); y=now.getFullYear(); m=now.getMonth()+1; d=now.getDate(); h=now.getHours();
+  }
+  document.getElementById('yearInput').value=y;
+  document.getElementById('monthInput').value=m;
+  document.getElementById('dayInput').value=d;
+  document.getElementById('hourInput').value=h;
 });
 </script>
 </body>

@@ -73,10 +73,17 @@ def tieban_page():
 @app.get("/api")
 def api_root():
     """API 信息"""
+    import datetime
+    now = datetime.datetime.now()
     return {
         "name": "皇极经世推演系统",
         "version": "0.2.0",
         "description": "元会运世·九层卦象·分形同构",
+        "server_time": now.strftime('%Y-%m-%d %H:%M:%S'),
+        "year": now.year,
+        "month": now.month,
+        "day": now.day,
+        "hour": now.hour,
         "endpoints": {
             "hexagram": "/api/hexagram — 卦象推演",
             "analysis": "/api/analysis — 周期分析与趋势推演",

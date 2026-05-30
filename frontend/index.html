@@ -841,10 +841,17 @@ function playLv(lvName) {
   audio.play().catch(e => console.log('播放失败:', e));
 }
 
-// 页面加载自动推演今天
-document.addEventListener('DOMContentLoaded', () => {
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate(), h = now.getHours();
+// 页面加载：从服务器获取当前时间（避免浏览器本地时间不准）
+document.addEventListener('DOMContentLoaded', async () => {
+  let y, m, d, h;
+  try {
+    const resp = await fetch(`${API}/api`);
+    const info = await resp.json();
+    y = info.year; m = info.month; d = info.day; h = info.hour;
+  } catch(e) {
+    const now = new Date();
+    y = now.getFullYear(); m = now.getMonth()+1; d = now.getDate(); h = now.getHours();
+  }
   document.getElementById('yearInput').value = y;
   document.getElementById('monthInput').value = m;
   document.getElementById('dayInput').value = d;
