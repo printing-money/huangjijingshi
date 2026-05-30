@@ -184,7 +184,10 @@ class TiebanEngine:
 
         # Step 8: 流年条文（1-100岁）
         result.liunian = self._calc_liunian(
-            year_gan, year_zhi, xiantian, result.houtian_num
+            year_gan, year_zhi, xiantian, result.houtian_num,
+            moment=result.moment,
+            sum_val=result.day_life + result.time_luck,
+            gender=gender,
         )
 
         return result
@@ -196,28 +199,92 @@ class TiebanEngine:
         return groups[idx % 5]
 
     def _calc_liunian(self, year_gan: str, year_zhi: str,
-                      xiantian: int, houtian: int) -> list:
-        """计算流年条文（简化版）"""
+                      xiantian: int, houtian: int,
+                      moment: str = '初刻', sum_val: int = 5,
+                      gender: str = '男') -> list:
+        """
+        计算流年条文（正确的查表逻辑）
+
+        流程：
+        1. 四声 = 查 LIUNIAN_SEQ（先天命数+天干→12四声序列）
+        2. 标记 = 查 MARKER_TABLE（流年地支+后天命数→标记）
+        3. 字母 = 查 LETTER_TABLE（考刻+奇偶+四声+标记→字母）
+        4. 条文号 = 查 FORTUNE_TABLE（字母+岁数→基数+加数）
+        5. 断词 = 查条文库
+        """
+        from ..data.tieban_tables import (
+            LIUNIAN_START, LIUNIAN_SEQ, MARKER_TABLE, LETTER_TABLE, FORTUNE_TABLE,
+        )
+
         liunian = []
         st_tg = TIANGAN.index(year_gan)
         st_dz = DIZHI.index(year_zhi)
+
+        # Step 1: 确定四声序列
+        # 查起始数
+        if year_zhi in '寅午戌':
+            zhi_group = '寅午戌'
+        elif year_zhi in '申子辰':
+            zhi_group = '申子辰'
+        elif year_zhi in '巳酉丑':
+            zhi_group = '巳酉丑'
+        else:
+            zhi_group = '亥卯未'
+
+        start = LIUNIAN_START.get((zhi_group, gender), 1)
+
+        # 查四声原始序列
+        raw_seq = LIUNIAN_SEQ.get((xiantian, year_gan), [])
+        if not raw_seq:
+            # fallback: 尝试用天干组
+            for gan in TIANGAN:
+                raw_seq = LIUNIAN_SEQ.get((xiantian, gan), [])
+                if raw_seq:
+                    break
+
+        # 按起始数偏移
+        final_seq = ['?'] * 12
+        if raw_seq and len(raw_seq) >= 12:
+            off = (13 - start) % 12
+            final_seq = [raw_seq[(i + off) % 12] for i in range(12)]
+
+        # 奇偶性
+        parity = '奇数' if sum_val % 2 != 0 else '偶数'
 
         for age in range(1, 101):
             cur_tg = TIANGAN[(st_tg + age - 1) % 10]
             cur_dz = DIZHI[(st_dz + age - 1) % 12]
             cur_gz = cur_tg + cur_dz
 
-            # 简化条文编号计算：基于先天命数+后天命数+年龄
-            # 实际铁板神数有更复杂的查表过程，这里用简化公式
-            base_num = (xiantian * 100 + houtian * 10 + age) % 12000
-            tiaowen_num = base_num + 1001  # 映射到1001-12999范围
+            # Step 1: 四声（按12循环）
+            sound = final_seq[(age - 1) % 12] if final_seq[0] != '?' else '?'
 
-            tiaowen = get_tiaowen(tiaowen_num)
+            # Step 2: 标记（地支+后天命数）
+            marker = MARKER_TABLE.get((cur_dz, houtian), '?')
+
+            # Step 3: 字母（考刻+奇偶+四声+标记）
+            age_parity = '奇数' if age % 2 != 0 else '偶数'
+            letter = LETTER_TABLE.get((moment, age_parity, sound, marker), '?')
+
+            # Step 4: 条文编号（字母+岁数→基数+加数）
+            tiaowen_num = 0
+            formula = ''
+            if letter != '?' and (letter, age) in FORTUNE_TABLE:
+                base, add, correction = FORTUNE_TABLE[(letter, age)]
+                tiaowen_num = base + add
+                formula = f'{base}+{add}={tiaowen_num}'
+
+            # Step 5: 查断词
+            tiaowen = get_tiaowen(tiaowen_num) if tiaowen_num > 0 else {}
 
             liunian.append({
                 'age': age,
                 'ganzhi': cur_gz,
+                'sound': sound,
+                'marker': marker,
+                'letter': letter,
                 'tiaowen_num': tiaowen_num,
+                'formula': formula,
                 'duanyu': tiaowen.get('断词', ''),
                 'duanyu_age': tiaowen.get('年龄', ''),
             })
