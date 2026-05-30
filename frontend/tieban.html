@@ -87,7 +87,7 @@ h1 { text-align: center; font-size: 1.6rem; color: #e8a838; letter-spacing: 0.3e
     </div>
     <div class="form-group">
       <label>出生时间</label>
-      <input type="datetime-local" id="birthTime">
+      <input type="text" id="birthTime" placeholder="如 1990-06-15 14:30">
       <div class="hint">公历时间，系统自动转换农历和八字</div>
     </div>
   </div>
@@ -115,27 +115,16 @@ h1 { text-align: center; font-size: 1.6rem; color: #e8a838; letter-spacing: 0.3e
 
 <script>
 // 默认填入当前时间
-document.addEventListener('DOMContentLoaded', async () => {
-  // 优先用服务器端注入的时间（window.__SERVER_TIME__）
-  let y, m, d, h;
+document.addEventListener('DOMContentLoaded', () => {
+  // 用服务器端注入的时间
   if (window.__SERVER_TIME__) {
-    y = window.__SERVER_TIME__.year;
-    m = String(window.__SERVER_TIME__.month).padStart(2,'0');
-    d = String(window.__SERVER_TIME__.day).padStart(2,'0');
-    h = String(window.__SERVER_TIME__.hour).padStart(2,'0');
-  } else {
-    try {
-      const resp = await fetch('/api');
-      const info = await resp.json();
-      y = info.year; m = String(info.month).padStart(2,'0');
-      d = String(info.day).padStart(2,'0'); h = String(info.hour).padStart(2,'0');
-    } catch(e) {
-      const now = new Date();
-      y = now.getFullYear(); m = String(now.getMonth()+1).padStart(2,'0');
-      d = String(now.getDate()).padStart(2,'0'); h = String(now.getHours()).padStart(2,'0');
-    }
+    const t = window.__SERVER_TIME__;
+    const m = String(t.month).padStart(2,'0');
+    const d = String(t.day).padStart(2,'0');
+    const h = String(t.hour).padStart(2,'0');
+    const min = String(t.minute || 0).padStart(2,'0');
+    document.getElementById('birthTime').value = `${t.year}-${m}-${d} ${h}:${min}`;
   }
-  document.getElementById('birthTime').value = `${y}-${m}-${d}T${h}:00`;
 });
 
 async function doPaipan() {
@@ -143,8 +132,8 @@ async function doPaipan() {
   btn.disabled = true;
   btn.textContent = '排盘中...';
 
-  const birthInput = document.getElementById('birthTime').value;
-  const birthTime = birthInput ? birthInput.replace('T', ' ') : '';
+  const birthInput = document.getElementById('birthTime').value.trim();
+  const birthTime = birthInput.replace('T', ' ');
 
   const body = {
     gender: document.getElementById('gender').value,
