@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>皇极经世 · 天地推演</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0f1923;
+  --card: #1a2a3a;
+  --card-hover: #223344;
+  --accent: #e8a838;
+  --accent2: #4ecdc4;
+  --text: #e8e8e8;
+  --text-dim: #8899aa;
+  --danger: #e94560;
+  --success: #4ecdc4;
+}
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* 顶部 */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  background: linear-gradient(180deg, #1a2a3a 0%, var(--bg) 100%);
+}
+.hero h1 {
+  font-size: 1.8rem;
+  font-weight: 300;
+  letter-spacing: 0.5em;
+  color: var(--accent);
+}
+.hero .subtitle {
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* 今日卡片 */
+.today-card {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  padding: 2rem;
+  background: var(--card);
+  border-radius: 16px;
+  border: 1px solid rgba(232,168,56,0.2);
+}
+.today-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.today-date {
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+.today-ganzhi {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  background: rgba(232,168,56,0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* 主卦展示 */
+.main-hexagram {
+  text-align: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 1.5rem;
+}
+.main-hexagram .symbol { font-size: 4rem; line-height: 1; }
+.main-hexagram .name { font-size: 1.3rem; margin: 0.5rem 0; color: var(--text); }
+.main-hexagram .guaci { font-size: 0.95rem; color: var(--accent); font-style: italic; }
+
+/* 白话解读 */
+.plain-reading {
+  background: rgba(78,205,196,0.05);
+  border-left: 3px solid var(--accent2);
+  padding: 1rem 1.2rem;
+  border-radius: 0 8px 8px 0;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+.plain-reading .label {
+  font-size: 0.75rem;
+  color: var(--accent2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.3rem;
+}
+
+/* 能量指示器 */
+.energy-indicator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.energy-label { font-size: 0.85rem; color: var(--text-dim); min-width: 60px; }
+.energy-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.energy-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+.energy-value { font-size: 0.85rem; color: var(--text-dim); min-width: 40px; text-align: right; }
+
+/* 层级展示 */
+.layers-section {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+.layers-title {
+  font-size: 1rem;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.layers-title::after {
+  content: '▾';
+  font-size: 0.8rem;
+}
+.layers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.8rem;
+}
+.layer-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: border-color 0.2s;
+}
+.layer-card:hover { border-color: rgba(232,168,56,0.3); }
+.layer-card .layer-level {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.layer-card .layer-hex {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+}
+.layer-card .layer-hex .sym { font-size: 1.8rem; }
+.layer-card .layer-hex .nm { font-size: 1rem; }
+.layer-card .layer-desc {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* 时间线 */
+.timeline-section {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+.timeline-bar {
+  display: flex;
+  gap: 2px;
+  height: 50px;
+  margin: 1rem 0;
+  align-items: flex-end;
+}
+.tl-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  position: relative;
+  min-width: 0;
+}
+.tl-cell:hover { opacity: 0.8; }
+.tl-cell .tl-sym { font-size: 0.9rem; }
+.tl-cell.current { box-shadow: 0 0 0 2px var(--accent); border-radius: 4px; }
+.tl-labels {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+.tl-labels span {
+  flex: 1;
+  text-align: center;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
+/* 趋势 */
+.trend-section {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+.trend-summary {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+.trend-summary .headline {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+.trend-nodes { list-style: none; }
+.trend-nodes li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 0.85rem;
+}
+.trend-nodes .yr { color: var(--accent); font-weight: 600; min-width: 45px; }
+.trend-nodes .tag {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(78,205,196,0.15);
+  color: var(--accent2);
+}
+
+/* 帮助提示 */
+.help-tip {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  padding: 1.2rem 1.5rem;
+  background: rgba(232,168,56,0.05);
+  border: 1px solid rgba(232,168,56,0.15);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+.help-tip summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+/* 输入区 */
+.input-bar {
+  max-width: 700px;
+  margin: 0 auto 1.5rem;
+  padding: 0 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.input-bar input {
+  width: 70px;
+  padding: 0.5rem;
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.input-bar button {
+  padding: 0.5rem 1.2rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.input-bar button:hover { opacity: 0.9; }
+
+.footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+.footer a { color: var(--accent2); text-decoration: none; }
+
+.loading { text-align: center; padding: 2rem; color: var(--text-dim); }
+
+/* 对话面板 */
+.chat-section {
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+.chat-box {
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid rgba(78,205,196,0.2);
+  overflow: hidden;
+}
+.chat-header {
+  padding: 0.8rem 1.2rem;
+  background: rgba(78,205,196,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.chat-header .title { font-size: 0.9rem; color: var(--accent2); }
+.chat-header .mode-tag {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(78,205,196,0.15);
+  color: var(--accent2);
+}
+.chat-messages {
+  padding: 1rem 1.2rem;
+  max-height: 400px;
+  overflow-y: auto;
+  min-height: 80px;
+}
+.chat-msg {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+.chat-msg.user {
+  text-align: right;
+}
+.chat-msg.user .bubble {
+  display: inline-block;
+  background: rgba(232,168,56,0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 12px 12px 0 12px;
+  max-width: 80%;
+  text-align: left;
+}
+.chat-msg.ai .bubble {
+  background: rgba(78,205,196,0.05);
+  padding: 0.8rem 1rem;
+  border-radius: 0 12px 12px 12px;
+  border: 1px solid rgba(78,205,196,0.1);
+}
+.chat-msg.ai .bubble p { margin: 0.4rem 0; }
+.chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.chat-input-row input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+}
+.chat-input-row input:focus { border-color: var(--accent2); }
+.chat-input-row button {
+  padding: 0.6rem 1.2rem;
+  background: var(--accent2);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.chat-input-row button:hover { opacity: 0.85; }
+.chat-input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* prompt 复制模式 */
+.prompt-box {
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  position: relative;
+}
+.prompt-box pre {
+  white-space: pre-wrap;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.api-key-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.api-key-row input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>天 地 推 演</h1>
+  <p class="subtitle">基于邵雍《皇极经世》· 万物运行的时间密码</p>
+</div>
+
+<div class="input-bar">
+  <input type="number" id="yearInput" placeholder="年">
+  <input type="number" id="monthInput" placeholder="月">
+  <input type="number" id="dayInput" placeholder="日">
+  <input type="number" id="hourInput" placeholder="时">
+  <button onclick="doQuery()">推演</button>
+</div>
+
+<div id="todayCard" class="today-card">
+  <div class="loading">正在推演...</div>
+</div>
+
+<div class="layers-section">
+  <div class="layers-title" onclick="toggleLayers()">查看完整卦象层级（从宇宙到此刻）</div>
+  <div class="layers-grid" id="layersGrid" style="display:none;"></div>
+</div>
+
+<div class="timeline-section">
+  <div class="layers-title" onclick="toggleTimeline()">近年运势走向</div>
+  <div id="timelineContent" style="display:none;"></div>
+</div>
+
+<div class="trend-section">
+  <div class="layers-title" onclick="toggleTrend()">未来关键节点</div>
+  <div id="trendContent" style="display:none;"></div>
+</div>
+
+<!-- 对话面板 -->
+<div class="chat-section">
+  <div class="chat-box">
+    <div class="chat-header">
+      <span class="title">💬 问问天机</span>
+      <span class="mode-tag" id="chatModeTag">prompt模式</span>
+    </div>
+    <div class="api-key-row">
+      <span>API Key（可选）:</span>
+      <input type="password" id="apiKeyInput" placeholder="填入后可直接对话，不填则生成 prompt 供复制">
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg ai">
+        <div class="bubble">
+          你好，我可以结合当前的卦象为你解读运势。试试问我：<br>
+          · 今年适合创业吗？<br>
+          · 未来几年的大趋势是什么？<br>
+          · 帮我解读一下当前的卦象组合
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" id="chatSendBtn">发送</button>
+    </div>
+  </div>
+</div>
+
+<details class="help-tip">
+  <summary>这是什么？怎么看？</summary>
+  <p style="margin-top:0.8rem;">
+    <strong>皇极经世</strong>是北宋哲学家邵雍创立的一套时间推演体系。他认为宇宙运行有固定的节律，就像四季交替一样，可以用数学模型来描述。
+  </p>
+  <p style="margin-top:0.5rem;">
+    <strong>怎么看结果：</strong><br>
+    · <strong>岁卦</strong> = 今年的"主旋律"，类似星座的年度运势<br>
+    · <strong>能量值</strong> = 阳气强弱，高=积极进取期，低=蛰伏蓄力期<br>
+    · <strong>五行关系</strong> = 内外环境是否协调（生=顺，克=有阻力）<br>
+    · <strong>关键节点</strong> = 未来可能出现转折的年份
+  </p>
+  <p style="margin-top:0.5rem;">
+    <strong>层级从大到小：</strong><br>
+    元(12.96万年) → 会(1.08万年) → 运(360年) → 世(30年) → 岁(1年) → 月 → 日 → 时辰<br>
+    就像"世纪→年代→年→月→日"，每一层都有对应的卦象描述当时的"气候"。
+  </p>
+</details>
+
+<div class="footer">
+  <a href="/docs">API 文档</a> · 基于邵雍《皇极经世书》与黄畿注解
+</div>
+
+<script>
+const API = '';
+
+// 白话解读映射
+const NATURE_TEXT = {
+  '大吉': '🌟 大吉之象，万事亨通',
+  '吉': '☀️ 吉象，顺势而为',
+  '平': '🌤️ 平稳之象，稳中求进',
+  '凶': '🌧️ 有阻力，宜谨慎',
+  '大凶': '⛈️ 逆境之象，韬光养晦',
+};
+
+const ENERGY_DESCRIPTIONS = [
+  '蛰伏期 · 静待时机',      // 0
+  '萌动期 · 一阳来复',      // 1
+  '生长期 · 渐入佳境',      // 2
+  '平衡期 · 阴阳调和',      // 3
+  '旺盛期 · 积极进取',      // 4
+  '鼎盛期 · 如日中天',      // 5
+  '极盛期 · 物极必反',      // 6
+];
+
+const WUXING_PLAIN = {
+  '比和': '内外一致，和谐共振',
+  '下生上': '内在滋养外在，顺畅上升',
+  '上生下': '外在反哺内在，略有消耗',
+  '上克下': '外部压力较大，需要坚韧',
+  '下克上': '内在力量突破外在限制',
+};
+
+const LAYER_EXPLAIN = {
+  '元': '宇宙大周期（12.96万年）',
+  '会': '文明周期（10800年）',
+  '运': '时代周期（360年）',
+  '世': '世代周期（30年）',
+  '十年律卦': '十年运势',
+  '岁': '今年主卦',
+  '月经': '当前双月',
+  '旬纬': '当前旬（10天）',
+  '日': '今日',
+  '时经': '当前时辰',
+};
+
+function yangColor(n) {
+  const colors = ['#2d3748', '#4a3060', '#6b3a6b', '#c73e54', '#e94560', '#f59e0b', '#fbbf24'];
+  return colors[n] || '#333';
+}
+
+function energyGradient(n) {
+  if (n <= 1) return 'linear-gradient(90deg, #4a5568, #6b7280)';
+  if (n <= 2) return 'linear-gradient(90deg, #065f46, #10b981)';
+  if (n <= 3) return 'linear-gradient(90deg, #1e40af, #3b82f6)';
+  if (n <= 4) return 'linear-gradient(90deg, #92400e, #f59e0b)';
+  return 'linear-gradient(90deg, #dc2626, #f59e0b)';
+}
+
+async function doQuery() {
+  const year = +document.getElementById('yearInput').value;
+  const month = +document.getElementById('monthInput').value;
+  const day = +document.getElementById('dayInput').value;
+  const hour = +document.getElementById('hourInput').value;
+
+  await loadToday(year, month, day, hour);
+}
+
+async function loadToday(year, month, day, hour) {
+  const card = document.getElementById('todayCard');
+  card.innerHTML = '<div class="loading">推演中...</div>';
+
+  try {
+    // 获取 AI 解读
+    const aiResp = await fetch(`${API}/api/ext/ai/interpret/${year}?month=${month}&day=${day}`);
+    const aiData = await aiResp.json();
+
+    // 获取完整卦象链
+    const chainResp = await fetch(`${API}/api/hexagram/datetime`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({year, month, day, hour})
+    });
+    const chainData = await chainResp.json();
+
+    renderToday(aiData, chainData);
+    renderLayers(chainData);
+    loadTimeline(year);
+    loadTrend(year);
+  } catch(e) {
+    card.innerHTML = `<div class="loading" style="color:var(--danger)">连接失败，请确认服务已启动</div>`;
+  }
+}
+
+function renderToday(ai, chain) {
+  const sui = chain.sui;
+  const yangN = sui.yang_count;
+  const energyPct = Math.round(yangN / 6 * 100);
+  const interp = ai.interpretation;
+  const nature = interp.nature || '平';
+  const wuxingRel = ai.wuxing_analysis.sui.relation;
+
+  let plainText = '';
+  if (interp.overall) {
+    plainText = interp.overall;
+  } else {
+    plainText = `今年岁卦为${sui.name}卦，${ENERGY_DESCRIPTIONS[yangN]}。${WUXING_PLAIN[wuxingRel] || ''}`;
+  }
+
+  const card = document.getElementById('todayCard');
+  card.innerHTML = `
+    <div class="today-header">
+      <span class="today-date">${ai.year}年</span>
+      <span class="today-ganzhi">${ai.ganzhi}年 · ${ai.coordinate.global_yun > 0 ? '第'+ai.coordinate.global_yun+'运' : ''}</span>
+    </div>
+
+    <div class="main-hexagram">
+      <div class="symbol">${sui.unicode}</div>
+      <div class="name">${sui.name}卦 <span style="font-size:0.8rem;color:var(--text-dim)">— 年度主卦</span></div>
+      <div class="guaci">${interp.layers && interp.layers['岁'] ? interp.layers['岁'].gua_ci || '' : ''}</div>
+    </div>
+
+    <div class="plain-reading">
+      <div class="label">白话解读</div>
+      ${NATURE_TEXT[nature] || '🌤️ ' + nature}<br>
+      ${plainText}
+    </div>
+
+    <div class="energy-indicator">
+      <span class="energy-label">阳气</span>
+      <div class="energy-track">
+        <div class="energy-fill" style="width:${energyPct}%; background:${energyGradient(yangN)}"></div>
+      </div>
+      <span class="energy-value">${yangN}/6</span>
+    </div>
+    <div style="font-size:0.8rem;color:var(--text-dim);margin-top:-0.5rem;margin-left:70px;">
+      ${ENERGY_DESCRIPTIONS[yangN]}
+    </div>
+
+    <div class="energy-indicator" style="margin-top:1rem;">
+      <span class="energy-label">五行</span>
+      <div style="flex:1;font-size:0.85rem;">
+        ${ai.wuxing_analysis.sui.description}
+        <span style="color:var(--accent2);margin-left:0.5rem;">${WUXING_PLAIN[wuxingRel] || ''}</span>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem;font-size:0.8rem;color:var(--text-dim);">
+      ${ai.yin_yang_state}
+    </div>
+  `;
+}
+
+function renderLayers(chain) {
+  const grid = document.getElementById('layersGrid');
+  const layers = [
+    {key:'yuan', label:'元'}, {key:'hui', label:'会'}, {key:'yun', label:'运'},
+    {key:'shi', label:'世'}, {key:'ten_year', label:'十年律卦'}, {key:'sui', label:'岁'},
+    {key:'yue_jing', label:'月经'}, {key:'xun_wei', label:'旬纬'},
+    {key:'ri', label:'日'}, {key:'shi_jing', label:'时经'},
+  ];
+
+  let html = '';
+  for (const l of layers) {
+    const hex = chain[l.key];
+    if (!hex) continue;
+    html += `
+      <div class="layer-card">
+        <div class="layer-level">${l.label}</div>
+        <div class="layer-hex">
+          <span class="sym">${hex.unicode}</span>
+          <span class="nm">${hex.name}</span>
+        </div>
+        <div class="layer-desc">${LAYER_EXPLAIN[l.label] || ''}</div>
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+async function loadTimeline(year) {
+  const start = year - 10;
+  const end = year + 10;
+  try {
+    const resp = await fetch(`${API}/api/hexagram/timeline/${start}/${end}`);
+    const data = await resp.json();
+
+    let barHtml = '<div class="timeline-bar">';
+    let labelsHtml = '<div class="tl-labels">';
+    for (const item of data.data) {
+      const isCurrent = item.year === year;
+      const h = Math.max(20, item.hexagram.yang_count / 6 * 50);
+      barHtml += `<div class="tl-cell ${isCurrent ? 'current' : ''}"
+        style="height:${h}px;background:${yangColor(item.hexagram.yang_count)}"
+        title="${item.year}(${item.ganzhi}) ${item.hexagram.name}卦 阳爻${item.hexagram.yang_count}">
+        <span class="tl-sym">${item.hexagram.unicode}</span>
+      </div>`;
+      labelsHtml += `<span>${isCurrent ? '★'+item.year : (item.year%5===0 ? item.year : '')}</span>`;
+    }
+    barHtml += '</div>';
+    labelsHtml += '</div>';
+
+    document.getElementById('timelineContent').innerHTML = barHtml + labelsHtml +
+      '<p style="font-size:0.75rem;color:var(--text-dim);margin-top:0.5rem;">柱高=阳气强度，★=当前年</p>';
+  } catch(e) {}
+}
+
+async function loadTrend(year) {
+  try {
+    const resp = await fetch(`${API}/api/analysis/trend/${year}?years=30`);
+    const data = await resp.json();
+
+    let html = `<div class="trend-summary"><div class="headline">${data.overall_trend}</div></div>`;
+    if (data.nodes.length > 0) {
+      html += '<ul class="trend-nodes">';
+      for (const n of data.nodes.filter(n => n.significance >= 5)) {
+        html += `<li><span class="yr">${n.year}</span><span class="tag">${n.level}</span><span>${n.description}</span></li>`;
+      }
+      html += '</ul>';
+    } else {
+      html += '<p style="color:var(--text-dim);font-size:0.85rem;">未来30年内无重大转折节点</p>';
+    }
+    document.getElementById('trendContent').innerHTML = html;
+  } catch(e) {}
+}
+
+function toggleLayers() {
+  const el = document.getElementById('layersGrid');
+  el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+}
+function toggleTimeline() {
+  const el = document.getElementById('timelineContent');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function toggleTrend() {
+  const el = document.getElementById('trendContent');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// 页面加载自动推演今天
+document.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate(), h = now.getHours();
+  document.getElementById('yearInput').value = y;
+  document.getElementById('monthInput').value = m;
+  document.getElementById('dayInput').value = d;
+  document.getElementById('hourInput').value = h;
+  loadToday(y, m, d, h);
+
+  // 检查 API Key 状态
+  document.getElementById('apiKeyInput').addEventListener('input', updateChatMode);
+  updateChatMode();
+});
+
+// === 对话功能 ===
+
+function updateChatMode() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const tag = document.getElementById('chatModeTag');
+  if (key) {
+    tag.textContent = '直接对话';
+    tag.style.background = 'rgba(78,205,196,0.3)';
+  } else {
+    tag.textContent = 'prompt模式';
+    tag.style.background = 'rgba(232,168,56,0.15)';
+    tag.style.color = 'var(--accent)';
+  }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  input.value = '';
+
+  const year = +document.getElementById('yearInput').value;
+  const month = +document.getElementById('monthInput').value;
+  const day = +document.getElementById('dayInput').value;
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+
+  // 显示用户消息
+  appendMessage('user', question);
+
+  const body = {
+    question,
+    year: year || new Date().getFullYear(),
+    month: month || new Date().getMonth() + 1,
+    day: day || new Date().getDate(),
+  };
+  if (apiKey) body.api_key = apiKey;
+
+  try {
+    const resp = await fetch(`${API}/api/chat/chat`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+
+    if (resp.headers.get('content-type')?.includes('text/event-stream')) {
+      // 流式模式
+      await handleStream(resp);
+    } else {
+      // prompt 模式
+      const data = await resp.json();
+      if (data.mode === 'prompt') {
+        appendPromptMessage(data.prompt, data.message);
+      } else {
+        appendMessage('ai', data.response || JSON.stringify(data));
+      }
+    }
+  } catch(e) {
+    appendMessage('ai', `⚠️ 请求失败: ${e.message}`);
+  }
+
+  btn.disabled = false;
+}
+
+async function handleStream(resp) {
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let aiText = '';
+  const msgEl = appendMessage('ai', '');
+  const bubble = msgEl.querySelector('.bubble');
+
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, {stream: true});
+    const lines = chunk.split('\n');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') break;
+        try {
+          const data = JSON.parse(payload);
+          if (data.text) {
+            aiText += data.text;
+            bubble.innerHTML = formatMarkdown(aiText);
+          } else if (data.error) {
+            aiText += `\n⚠️ ${data.error}`;
+            bubble.innerHTML = formatMarkdown(aiText);
+          }
+        } catch(e) {}
+      }
+    }
+  }
+
+  if (!aiText) {
+    bubble.innerHTML = '<em style="color:var(--text-dim)">（无响应）</em>';
+  }
+
+  // 滚动到底部
+  const container = document.getElementById('chatMessages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendMessage(role, text) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `<div class="bubble">${role === 'ai' ? formatMarkdown(text) : escapeHtml(text)}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function appendPromptMessage(prompt, tip) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ai';
+  div.innerHTML = `
+    <div class="bubble">
+      <p>${tip}</p>
+      <div class="prompt-box">
+        <button class="copy-btn" onclick="copyPrompt(this)">复制</button>
+        <pre>${escapeHtml(prompt)}</pre>
+      </div>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-top:0.5rem;">
+        💡 将上面的内容复制到 <a href="https://claude.ai" target="_blank" style="color:var(--accent2)">Claude</a> 或
+        <a href="https://chat.openai.com" target="_blank" style="color:var(--accent2)">ChatGPT</a> 中即可获得深度解读
+      </p>
+    </div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function copyPrompt(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = '已复制 ✓';
+    setTimeout(() => btn.textContent = '复制', 2000);
+  });
+}
+
+function formatMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+</script>
+</body>
+</html>
