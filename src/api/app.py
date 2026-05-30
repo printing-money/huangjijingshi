@@ -44,9 +44,16 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 
 
 def _serve_html(filepath):
-    """返回 HTML 文件并禁用缓存"""
+    """返回 HTML 文件，注入服务器时间，禁用缓存"""
+    import datetime
     if filepath.exists():
         content = filepath.read_text(encoding="utf-8")
+        # 服务器端注入当前时间，避免依赖浏览器 JS
+        now = datetime.datetime.now()
+        content = content.replace(
+            '</head>',
+            f'<script>window.__SERVER_TIME__={{year:{now.year},month:{now.month},day:{now.day},hour:{now.hour},minute:{now.minute}}};</script>\n</head>'
+        )
         return HTMLResponse(content, headers={
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
