@@ -62,6 +62,12 @@ def _serve_html(filepath):
     return HTMLResponse("<h1>页面未找到</h1><p><a href='/docs'>API文档</a></p>")
 
 
+@app.get("/tieban2", response_class=HTMLResponse)
+def tieban_page_v2():
+    """铁板神数（备用URL，绕过缓存）"""
+    return _serve_html(FRONTEND_DIR / "tieban.html")
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     """首页 - 大众版（白话解读）"""

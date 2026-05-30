@@ -165,10 +165,10 @@ function renderResult(data) {
   const c = data.calculation;
   const input = data.input;
 
-  // 计算当前年龄（用服务器时间，不用浏览器本地时间）
+  // 计算当前虚岁（铁板神数用虚岁：出生即1岁，过年加1岁）
   const birthYear = parseInt(input.birth_time.split('-')[0]);
   const serverYear = window.__SERVER_TIME__ ? window.__SERVER_TIME__.year : new Date().getFullYear();
-  const currentAge = serverYear - birthYear;
+  const currentAge = serverYear - birthYear + 1;
 
   let html = `
     <h2>📜 排盘结果</h2>
