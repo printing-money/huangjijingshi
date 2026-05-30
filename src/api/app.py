@@ -43,31 +43,34 @@ app.include_router(tieban_router, prefix="/api/tieban", tags=["铁板神数"])
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 
 
+def _serve_html(filepath):
+    """返回 HTML 文件并禁用缓存"""
+    if filepath.exists():
+        content = filepath.read_text(encoding="utf-8")
+        return HTMLResponse(content, headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        })
+    return HTMLResponse("<h1>页面未找到</h1><p><a href='/docs'>API文档</a></p>")
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     """首页 - 大众版（白话解读）"""
-    index_file = FRONTEND_DIR / "index.html"
-    if index_file.exists():
-        return index_file.read_text(encoding="utf-8")
-    return HTMLResponse("<h1>皇极经世推演系统</h1><p>前端文件未找到，请访问 <a href='/docs'>/docs</a> 查看 API 文档</p>")
+    return _serve_html(FRONTEND_DIR / "index.html")
 
 
 @app.get("/pro", response_class=HTMLResponse)
 def pro():
     """专业版（完整数据展示）"""
-    pro_file = FRONTEND_DIR / "pro.html"
-    if pro_file.exists():
-        return pro_file.read_text(encoding="utf-8")
-    return HTMLResponse("<h1>专业版未找到</h1>")
+    return _serve_html(FRONTEND_DIR / "pro.html")
 
 
 @app.get("/tieban", response_class=HTMLResponse)
 def tieban_page():
     """铁板神数批命"""
-    tieban_file = FRONTEND_DIR / "tieban.html"
-    if tieban_file.exists():
-        return tieban_file.read_text(encoding="utf-8")
-    return HTMLResponse("<h1>铁板批命页面未找到</h1>")
+    return _serve_html(FRONTEND_DIR / "tieban.html")
 
 
 @app.get("/api")
