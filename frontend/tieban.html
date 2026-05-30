@@ -184,6 +184,12 @@ function renderResult(data) {
       <div class="calc-item"><div class="label">考刻</div><div class="value">${c.moment}</div></div>
     </div>
 
+    ${data.benming_tiaowen && data.benming_tiaowen !== '未匹配到本命条文' ? `
+    <div style="margin-top:1.2rem;background:#0f1923;border-radius:8px;padding:1rem;border-left:3px solid #e8a838;">
+      <h3 style="font-size:0.9rem;color:#e8a838;margin-bottom:0.6rem;">📜 本命总论</h3>
+      <div style="font-size:0.85rem;line-height:1.8;color:#ccc;">${data.benming_tiaowen.replace(/\n/g, '<br>')}</div>
+    </div>` : ''}
+
     <h2 style="margin-top:1.5rem;">📖 流年条文 <span style="font-size:0.75rem;color:#8899aa;font-weight:normal;">（共${data.liunian_count}年）</span></h2>
     <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;flex-wrap:wrap;">
       <button class="age-btn" onclick="showAgeRange(1,30)">1-30岁</button>

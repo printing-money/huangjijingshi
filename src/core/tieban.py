@@ -172,15 +172,32 @@ class TiebanEngine:
             fact = base_val - 6
         result.benming_num = fact * 30 + lunar_day
 
-        # Step 6: 十二辟卦
-        hex_idx = (result.benming_num - 1) % 12
-        result.hexagram = TWELVE_HEXAGRAMS[hex_idx]
+        # Step 6: 十二辟卦（优先用14-8精确映射，fallback用取模）
+        from ..data.tieban_benming import get_hexagram_by_benming, get_benming_tiaowen
+        mapped_hex = get_hexagram_by_benming(result.benming_num)
+        if mapped_hex:
+            result.hexagram = mapped_hex
+        else:
+            hex_idx = (result.benming_num - 1) % 12
+            result.hexagram = TWELVE_HEXAGRAMS[hex_idx]
 
         # Step 7: 后天命数
         pn_sum = xiantian + result.benming_num
         result.houtian_num = pn_sum % 8
         if result.houtian_num == 0:
             result.houtian_num = 8
+
+        # Step 7.5: 本命条文（一生总论）
+        benming_nums = get_benming_tiaowen(result.hexagram, xiantian, result.moment)
+        if benming_nums:
+            parts = []
+            for category, nums in benming_nums.items():
+                label = {'xingge': '性格', 'caiqian': '才能前程', 'caiyun': '财运', 'xiongdi': '兄弟'}
+                for num in nums:
+                    tw = get_tiaowen(num)
+                    if tw and tw.get('断词'):
+                        parts.append(f"【{label.get(category, category)}】{tw['断词']}")
+            result.benming_tiaowen = '\n'.join(parts)
 
         # Step 8: 流年条文（1-100岁）
         result.liunian = self._calc_liunian(
@@ -266,16 +283,28 @@ class TiebanEngine:
             age_parity = '奇数' if age % 2 != 0 else '偶数'
             letter = LETTER_TABLE.get((moment, age_parity, sound, marker), '?')
 
-            # Step 4: 条文编号（字母+岁数→基数+加数）
+            # Step 4: 条文编号（字母+岁数→基数+加数）+ 校正
             tiaowen_num = 0
+            corrected_num = 0
             formula = ''
             if letter != '?' and (letter, age) in FORTUNE_TABLE:
+                from ..data.tieban_benming import calculate_correction
                 base, add, correction = FORTUNE_TABLE[(letter, age)]
                 tiaowen_num = base + add
                 formula = f'{base}+{add}={tiaowen_num}'
 
-            # Step 5: 查断词
-            tiaowen = get_tiaowen(tiaowen_num) if tiaowen_num > 0 else {}
+                # 校正：根据年龄段调整校正数，查校正后条文
+                corrected_correction = calculate_correction(correction, age)
+                if corrected_correction > 0:
+                    # 在 FORTUNE_TABLE 中查找校正后的条文
+                    for (lt, ag), (b, a, c) in FORTUNE_TABLE.items():
+                        if c == corrected_correction and ag == age:
+                            corrected_num = b + a
+                            break
+
+            # Step 5: 查断词（优先用校正后的）
+            final_num = corrected_num if corrected_num > 0 else tiaowen_num
+            tiaowen = get_tiaowen(final_num) if final_num > 0 else {}
 
             liunian.append({
                 'age': age,
@@ -283,7 +312,7 @@ class TiebanEngine:
                 'sound': sound,
                 'marker': marker,
                 'letter': letter,
-                'tiaowen_num': tiaowen_num,
+                'tiaowen_num': final_num,
                 'formula': formula,
                 'duanyu': tiaowen.get('断词', ''),
                 'duanyu_age': tiaowen.get('年龄', ''),

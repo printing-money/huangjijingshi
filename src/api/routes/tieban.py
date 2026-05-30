@@ -108,6 +108,7 @@ def tieban_paipan(req: TiebanRequest):
             'hexagram': result.hexagram,
             'houtian_num': result.houtian_num,
         },
+        'benming_tiaowen': result.benming_tiaowen or '未匹配到本命条文',
         'liunian': result.liunian,
         'liunian_count': len(result.liunian),
     }
