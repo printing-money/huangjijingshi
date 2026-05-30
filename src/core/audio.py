@@ -233,7 +233,8 @@ def generate_chord(lvs: list, config: Optional[ToneConfig] = None) -> bytes:
 
 
 def generate_four_pillars_audio(year_gan: int, month_zhi: int,
-                                day_gan: int, hour_zhi: int) -> bytes:
+                                day_gan: int, hour_zhi: int,
+                                timbre: str = 'bianqing') -> bytes:
     """
     生成四柱律吕序列音频（年→月→日→时）
 
@@ -245,5 +246,5 @@ def generate_four_pillars_audio(year_gan: int, month_zhi: int,
         get_day_lv(day_gan),
         get_hour_lv(hour_zhi),
     ]
-    config = ToneConfig(duration=1.0, amplitude=0.5)
+    config = ToneConfig(duration=1.0, amplitude=0.5, timbre=timbre)
     return generate_sequence(lvs, gap=0.15, config=config)

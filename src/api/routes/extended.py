@@ -136,9 +136,10 @@ def get_daily_audio(
     year: int = Query(...),
     month: int = Query(..., ge=1, le=12),
     day: int = Query(..., ge=1, le=31),
+    timbre: str = Query(default='bianqing', description="音色: bianqing/guqin/xiao"),
 ):
     """生成指定日期的四柱律吕序列音频（年→月→日→时）"""
-    from ...core.audio import generate_four_pillars_audio
+    from ...core.audio import generate_four_pillars_audio, ToneConfig
     from ...core.tiangan_dizhi import day_ganzhi_index, index_to_ganzhi, year_ganzhi, hour_to_shichen
     from datetime import datetime
 
@@ -152,7 +153,7 @@ def get_daily_audio(
     # 时支（用当前小时）
     hour_zhi = hour_to_shichen(datetime.now().hour)
 
-    wav_data = generate_four_pillars_audio(ygz.gan_index, month_zhi, dgz.gan_index, hour_zhi)
+    wav_data = generate_four_pillars_audio(ygz.gan_index, month_zhi, dgz.gan_index, hour_zhi, timbre=timbre)
     return Response(content=wav_data, media_type='audio/wav')
 
 
@@ -160,6 +161,7 @@ def get_daily_audio(
 def get_sequence_audio(
     lvs: str = Query(..., description="律吕名称序列，逗号分隔，如：黄钟,太簇,姑洗"),
     duration: float = Query(default=0.8, ge=0.3, le=3.0),
+    timbre: str = Query(default='bianqing', description="音色: bianqing/guqin/xiao"),
 ):
     """生成自定义律吕序列音频"""
     from ...core.audio import generate_sequence, ToneConfig, TWELVE_LVLV
@@ -175,7 +177,7 @@ def get_sequence_audio(
     if not lv_list:
         return Response(content=b'', status_code=400)
 
-    config = ToneConfig(duration=duration)
+    config = ToneConfig(duration=duration, timbre=timbre)
     wav_data = generate_sequence(lv_list, gap=0.1, config=config)
     return Response(content=wav_data, media_type='audio/wav')
 

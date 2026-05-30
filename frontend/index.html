@@ -690,11 +690,24 @@ function renderToday(ai, chain) {
       ${ai.yin_yang_state}
     </div>
 
-    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:1rem;">
-      <button onclick="playDailyAudio()" style="padding:0.5rem 1rem;background:var(--accent2);color:#000;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:600;">
-        🔔 聆听今日律吕
-      </button>
-      <span style="font-size:0.75rem;color:var(--text-dim);">播放四柱律吕音序（年→月→日→时）</span>
+    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+        <select id="timbreSelect" style="padding:0.4rem 0.6rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--text);font-size:0.8rem;">
+          <option value="bianqing">🔔 编磬（金石）</option>
+          <option value="guqin">🎸 古琴（温润）</option>
+          <option value="xiao">🎵 洞箫（空灵）</option>
+        </select>
+        <button onclick="playDailyAudio()" style="padding:0.4rem 0.8rem;background:var(--accent2);color:#000;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;">
+          ▶ 四柱律吕
+        </button>
+        <button onclick="playYearLv()" style="padding:0.4rem 0.8rem;background:rgba(232,168,56,0.8);color:#000;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;">
+          ▶ 年律
+        </button>
+        <button onclick="playFiveNotes()" style="padding:0.4rem 0.8rem;background:rgba(155,89,182,0.8);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;">
+          ▶ 五音
+        </button>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.4rem;">选择音色后点击播放 · 四柱=年月日时律吕序列 · 五音=宫商角徵羽</div>
       <audio id="lvAudio" style="display:none;"></audio>
     </div>
   `;
@@ -786,20 +799,44 @@ function toggleTrend() {
 }
 
 // === 音频播放 ===
+function getTimbre() {
+  return document.getElementById('timbreSelect')?.value || 'bianqing';
+}
+
 function playDailyAudio() {
   const year = document.getElementById('yearInput').value;
   const month = document.getElementById('monthInput').value;
   const day = document.getElementById('dayInput').value;
-  const url = `${API}/api/ext/audio/daily?year=${year}&month=${month}&day=${day}`;
+  const timbre = getTimbre();
+  const url = `${API}/api/ext/audio/daily?year=${year}&month=${month}&day=${day}&timbre=${timbre}`;
 
   const audio = document.getElementById('lvAudio');
   audio.src = url;
   audio.play().catch(e => console.log('播放失败:', e));
 }
 
+function playYearLv() {
+  // 根据年干获取对应律吕名
+  const ganMap = ['黄钟','太簇','姑洗','蕤宾','夷则','黄钟','太簇','姑洗','蕤宾','夷则'];
+  const year = +document.getElementById('yearInput').value;
+  const ganIdx = ((year - 1984) % 10 + 10) % 10;
+  const lvName = ganMap[ganIdx];
+  playLv(lvName);
+}
+
+function playFiveNotes() {
+  // 五音：宫(黄钟)商(太簇)角(姑洗)徵(蕤宾)羽(夷则)
+  const timbre = getTimbre();
+  const url = `${API}/api/ext/audio/sequence?lvs=黄钟,太簇,姑洗,蕤宾,夷则&duration=0.8&timbre=${timbre}`;
+  const audio = document.getElementById('lvAudio');
+  audio.src = url;
+  audio.play().catch(e => console.log('播放失败:', e));
+}
+
 function playLv(lvName) {
-  const audio = document.getElementById('lvAudio') || new Audio();
-  audio.src = `${API}/api/ext/audio/lv/${encodeURIComponent(lvName)}?duration=1.2`;
+  const timbre = getTimbre();
+  const audio = document.getElementById('lvAudio');
+  audio.src = `${API}/api/ext/audio/lv/${encodeURIComponent(lvName)}?duration=1.5&timbre=${timbre}`;
   audio.play().catch(e => console.log('播放失败:', e));
 }
 
