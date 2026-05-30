@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>铁板神数 · 批命</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; }
+nav { background: #0a1018; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid #222; }
+nav .brand { color: #e8a838; font-size: 1rem; font-weight: bold; text-decoration: none; }
+nav a { color: #8899aa; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 4px; }
+nav a:hover, nav a.active { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+
+.container { max-width: 600px; margin: 0 auto; padding: 2rem 1rem; }
+h1 { text-align: center; font-size: 1.6rem; color: #e8a838; letter-spacing: 0.3em; margin-bottom: 0.5rem; }
+.subtitle { text-align: center; color: #8899aa; font-size: 0.85rem; margin-bottom: 2rem; }
+
+.form-group { margin-bottom: 1.2rem; }
+.form-group label { display: block; font-size: 0.8rem; color: #8899aa; margin-bottom: 0.4rem; }
+.form-group input, .form-group select {
+  width: 100%; padding: 0.6rem 0.8rem; background: #1a2a3a; border: 1px solid #333;
+  border-radius: 6px; color: #e0e0e0; font-size: 0.9rem;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
+
+.btn-submit {
+  width: 100%; padding: 0.8rem; background: #e94560; color: #fff; border: none;
+  border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 1rem;
+}
+.btn-submit:hover { background: #c73e54; }
+
+.result-panel { margin-top: 2rem; background: #1a2a3a; border-radius: 12px; padding: 1.5rem; border: 1px solid #333; display: none; }
+.result-panel.show { display: block; }
+.result-panel h2 { font-size: 1rem; color: #e8a838; margin-bottom: 1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+.calc-item { background: #0f1923; padding: 0.6rem; border-radius: 6px; }
+.calc-item .label { font-size: 0.7rem; color: #8899aa; }
+.calc-item .value { font-size: 1.1rem; color: #4ecdc4; font-weight: bold; }
+
+.liunian-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-top: 1rem; }
+.liunian-table th { color: #e8a838; font-weight: normal; text-align: left; padding: 0.4rem; border-bottom: 1px solid #333; }
+.liunian-table td { padding: 0.4rem; border-bottom: 1px solid #1a2a3a; }
+.liunian-table tr:hover { background: rgba(78,205,196,0.05); }
+
+.hexagram-display { text-align: center; font-size: 2.5rem; margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">皇极经世</a>
+  <a href="/">大众版</a>
+  <a href="/pro">专业版</a>
+  <a href="/tieban" class="active">铁板批命</a>
+  <a href="/docs">API文档</a>
+</nav>
+
+<div class="container">
+  <h1>铁 板 神 数</h1>
+  <p class="subtitle">据称邵康节先生所著 · 清代乾嘉年间盛行 · 12000条文断命</p>
+
+  <div class="form-group">
+    <label>性别</label>
+    <select id="gender"><option value="男">男</option><option value="女">女</option></select>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>农历月份</label>
+      <select id="lunarMonth">
+        <option value="1">正月</option><option value="2">二月</option><option value="3">三月</option>
+        <option value="4">四月</option><option value="5" selected>五月</option><option value="6">六月</option>
+        <option value="7">七月</option><option value="8">八月</option><option value="9">九月</option>
+        <option value="10">十月</option><option value="11">十一月</option><option value="12">十二月</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>农历日</label>
+      <input type="number" id="lunarDay" value="15" min="1" max="30">
+    </div>
+  </div>
+
+  <div class="form-group"><label>年柱</label>
+    <div class="form-row">
+      <select id="yearGan"><option>甲</option><option>乙</option><option>丙</option><option>丁</option><option>戊</option><option>己</option><option>庚</option><option>辛</option><option>壬</option><option>癸</option></select>
+      <select id="yearZhi"><option>子</option><option>丑</option><option>寅</option><option>卯</option><option>辰</option><option>巳</option><option>午</option><option>未</option><option>申</option><option>酉</option><option>戌</option><option>亥</option></select>
+    </div>
+  </div>
+
+  <div class="form-row3">
+    <div class="form-group"><label>月柱</label><input type="text" id="monthGz" value="庚午" placeholder="如庚午"></div>
+    <div class="form-group"><label>日柱</label><input type="text" id="dayGz" value="乙丑" placeholder="如乙丑"></div>
+    <div class="form-group"><label>时柱</label><input type="text" id="timeGz" value="甲申" placeholder="如甲申"></div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group"><label>父亲属相（可选）</label><input type="text" id="fatherZodiac" placeholder="如虎"></div>
+    <div class="form-group"><label>母亲属相（可选）</label><input type="text" id="motherZodiac" placeholder="如兔"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>兄弟姐妹数（可选）</label><input type="number" id="siblingCount" placeholder="如3"></div>
+    <div class="form-group"><label>排行（可选）</label><input type="number" id="siblingRank" placeholder="如2"></div>
+  </div>
+
+  <div class="form-group"><label><input type="checkbox" id="isLeap"> 闰月</label></div>
+
+  <button class="btn-submit" onclick="doPaipan()">排 盘 批 命</button>
+
+  <div class="result-panel" id="resultPanel">
+    <h2>📜 排盘结果</h2>
+    <div id="resultContent"></div>
+  </div>
+</div>
+
+<script>
+async function doPaipan() {
+  const body = {
+    gender: document.getElementById('gender').value,
+    lunar_month: +document.getElementById('lunarMonth').value,
+    lunar_day: +document.getElementById('lunarDay').value,
+    year_gan: document.getElementById('yearGan').value,
+    year_zhi: document.getElementById('yearZhi').value,
+    month_gz: document.getElementById('monthGz').value,
+    day_gz: document.getElementById('dayGz').value,
+    time_gz: document.getElementById('timeGz').value,
+    is_leap: document.getElementById('isLeap').checked,
+    father_zodiac: document.getElementById('fatherZodiac').value || null,
+    mother_zodiac: document.getElementById('motherZodiac').value || null,
+    sibling_count: +document.getElementById('siblingCount').value || null,
+    sibling_rank: +document.getElementById('siblingRank').value || null,
+  };
+
+  try {
+    const resp = await fetch('/api/tieban/paipan', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    renderResult(data);
+  } catch(e) {
+    alert('排盘失败: ' + e.message);
+  }
+}
+
+function renderResult(data) {
+  const panel = document.getElementById('resultPanel');
+  const content = document.getElementById('resultContent');
+  const c = data.calculation;
+
+  let html = `
+    <div class="calc-grid">
+      <div class="calc-item"><div class="label">先天命数</div><div class="value">${c.xiantian_num}</div></div>
+      <div class="calc-item"><div class="label">五音命数</div><div class="value">${c.wuyin_num}</div></div>
+      <div class="calc-item"><div class="label">日命数</div><div class="value">${c.day_life}</div></div>
+      <div class="calc-item"><div class="label">时运数</div><div class="value">${c.time_luck}</div></div>
+      <div class="calc-item"><div class="label">考刻</div><div class="value">${c.moment}</div></div>
+      <div class="calc-item"><div class="label">本命数</div><div class="value">${c.benming_num}</div></div>
+      <div class="calc-item"><div class="label">十二辟卦</div><div class="value">${c.hexagram}</div></div>
+      <div class="calc-item"><div class="label">后天命数</div><div class="value">${c.houtian_num}</div></div>
+    </div>
+
+    <h2 style="margin-top:1.5rem;">📖 流年条文</h2>
+    <table class="liunian-table">
+      <tr><th>岁</th><th>干支</th><th>断词</th></tr>
+  `;
+
+  for (const l of data.liunian) {
+    const duanyu = l.duanyu || '<span style="color:#666">—</span>';
+    html += `<tr><td>${l.age}</td><td>${l.ganzhi}</td><td>${duanyu}</td></tr>`;
+  }
+  html += '</table>';
+  if (data.liunian_count > data.liunian.length) {
+    html += `<p style="color:#8899aa;font-size:0.75rem;margin-top:0.5rem;">显示前${data.liunian.length}年，共${data.liunian_count}年</p>`;
+  }
+
+  content.innerHTML = html;
+  panel.classList.add('show');
+}
+</script>
+</body>
+</html>
