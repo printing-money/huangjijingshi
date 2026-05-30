@@ -34,22 +34,54 @@ class ToneConfig:
     """音色配置"""
     duration: float = 1.5       # 时长（秒）
     amplitude: float = 0.6      # 音量 (0-1)
-    attack: float = 0.05        # 起音时间（秒）
-    decay: float = 0.3          # 衰减时间（秒）
-    sustain: float = 0.7        # 持续音量比
-    release: float = 0.4        # 释音时间（秒）
-    harmonics: list = None      # 泛音系数 [(倍频, 振幅), ...]
+    attack: float = 0.01        # 起音时间（秒）
+    decay: float = 0.8          # 衰减时间（秒）
+    sustain: float = 0.2        # 持续音量比
+    release: float = 0.6        # 释音时间（秒）
+    timbre: str = 'bianqing'    # 音色: bianqing(编磬) / guqin(古琴) / xiao(箫)
+    harmonics: list = None      # 泛音系数 [(倍频, 振幅, 衰减倍率), ...]
 
     def __post_init__(self):
         if self.harmonics is None:
-            # 默认泛音：模拟古琴/编钟音色
-            self.harmonics = [
-                (1.0, 1.0),     # 基频
-                (2.0, 0.3),     # 二倍频
-                (3.0, 0.15),    # 三倍频
-                (4.0, 0.08),    # 四倍频
-                (5.0, 0.04),    # 五倍频
-            ]
+            self.harmonics = TIMBRES.get(self.timbre, TIMBRES['bianqing'])
+
+
+# 乐器音色泛音模型
+TIMBRES = {
+    # 编磬：清亮金石声，高次泛音丰富，衰减快
+    # 特点：起音极快、泛音明亮、余韵清透
+    'bianqing': [
+        (1.0, 1.0, 1.0),       # 基频
+        (2.0, 0.6, 1.5),       # 八度泛音，较强
+        (3.0, 0.4, 2.0),       # 五度泛音
+        (4.0, 0.25, 2.5),      # 两个八度
+        (5.0, 0.15, 3.0),      # 大三度泛音
+        (6.0, 0.1, 3.5),       # 高次泛音
+        (7.0, 0.06, 4.0),
+        (2.003, 0.08, 1.8),    # 微失谐，增加"金属感"
+        (4.01, 0.05, 3.0),
+    ],
+    # 古琴：温润深沉，基频为主，泛音柔和
+    # 特点：起音有"按弦"感，余韵绵长
+    'guqin': [
+        (1.0, 1.0, 1.0),
+        (2.0, 0.35, 1.2),
+        (3.0, 0.2, 1.8),
+        (4.0, 0.1, 2.5),
+        (5.0, 0.05, 3.0),
+        (0.5, 0.08, 0.8),     # 低八度共鸣
+        (1.5, 0.06, 2.0),     # 五度下方
+    ],
+    # 洞箫：空灵飘逸，奇次泛音为主，有气息感
+    # 特点：起音有气声，音色纯净
+    'xiao': [
+        (1.0, 1.0, 1.0),
+        (2.0, 0.15, 1.5),
+        (3.0, 0.3, 1.8),      # 奇次泛音较强（管乐特征）
+        (5.0, 0.12, 2.5),
+        (7.0, 0.05, 3.5),
+    ],
+}
 
 
 def lv_to_frequency(lv: LvLv) -> float:
@@ -61,7 +93,10 @@ def generate_tone(frequency: float, config: Optional[ToneConfig] = None) -> byte
     """
     生成单个音调的 PCM 数据
 
-    使用 ADSR 包络 + 泛音叠加，模拟古乐器音色
+    模拟真实乐器音色：
+    - 每个泛音有独立的衰减速率（高次泛音消失更快）
+    - 自然指数衰减代替线性 ADSR
+    - 微量随机抖动模拟自然振动
     """
     if config is None:
         config = ToneConfig()
@@ -72,28 +107,36 @@ def generate_tone(frequency: float, config: Optional[ToneConfig] = None) -> byte
     for i in range(num_samples):
         t = i / SAMPLE_RATE
 
-        # ADSR 包络
+        # 起音包络（极短的 attack）
         if t < config.attack:
-            envelope = t / config.attack
-        elif t < config.attack + config.decay:
-            decay_progress = (t - config.attack) / config.decay
-            envelope = 1.0 - (1.0 - config.sustain) * decay_progress
-        elif t < config.duration - config.release:
-            envelope = config.sustain
+            attack_env = t / config.attack
         else:
-            release_progress = (t - (config.duration - config.release)) / config.release
-            envelope = config.sustain * (1.0 - release_progress)
+            attack_env = 1.0
 
-        # 泛音叠加
+        # 自然指数衰减（模拟真实乐器的能量耗散）
+        decay_env = math.exp(-t * 3.0 / config.duration)
+
+        # 尾部淡出
+        if t > config.duration - config.release:
+            fade = (config.duration - t) / config.release
+        else:
+            fade = 1.0
+
+        envelope = attack_env * decay_env * fade
+
+        # 泛音叠加，每个泛音独立衰减
         value = 0.0
-        for harmonic_mult, harmonic_amp in config.harmonics:
-            value += harmonic_amp * math.sin(2 * math.pi * frequency * harmonic_mult * t)
+        for harmonic_data in config.harmonics:
+            harmonic_mult, harmonic_amp, decay_mult = harmonic_data
+            # 高次泛音衰减更快
+            h_decay = math.exp(-t * decay_mult * 4.0 / config.duration)
+            value += harmonic_amp * h_decay * math.sin(2 * math.pi * frequency * harmonic_mult * t)
 
-        # 归一化泛音
-        total_amp = sum(a for _, a in config.harmonics)
+        # 归一化
+        total_amp = sum(a for _, a, _ in config.harmonics)
         value /= total_amp
 
-        # 应用包络和音量
+        # 应用总包络和音量
         value *= envelope * config.amplitude
 
         # 转为 16-bit PCM
@@ -167,18 +210,10 @@ def generate_chord(lvs: list, config: Optional[ToneConfig] = None) -> bytes:
         freq = lv_to_frequency(lv)
         for i in range(num_samples):
             t = i / SAMPLE_RATE
-
-            # ADSR
+            # 自然衰减
+            envelope = math.exp(-t * 3.0 / config.duration)
             if t < config.attack:
-                envelope = t / config.attack
-            elif t < config.attack + config.decay:
-                decay_progress = (t - config.attack) / config.decay
-                envelope = 1.0 - (1.0 - config.sustain) * decay_progress
-            elif t < config.duration - config.release:
-                envelope = config.sustain
-            else:
-                release_progress = (t - (config.duration - config.release)) / config.release
-                envelope = config.sustain * (1.0 - release_progress)
+                envelope *= t / config.attack
 
             value = math.sin(2 * math.pi * freq * t) * envelope
             mixed[i] += value

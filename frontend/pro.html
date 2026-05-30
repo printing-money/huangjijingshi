@@ -55,9 +55,46 @@ nav a:hover, nav a.active { color: #e0e0e0; background: rgba(255,255,255,0.05); 
 .timeline-cell {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   border-radius: 3px; cursor: pointer; font-size: 0.7rem; min-width: 25px;
+  position: relative;
 }
-.timeline-cell:hover { transform: scaleY(1.1); }
+.timeline-cell:hover { transform: scaleY(1.1); z-index: 10; }
 .timeline-cell .year-label { font-size: 0.55rem; color: #888; }
+
+/* 悬浮提示框 */
+.tl-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f1923;
+  border: 1px solid #e8a838;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  width: 280px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #e0e0e0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 100;
+  pointer-events: none;
+}
+.tl-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #e8a838;
+}
+.timeline-cell:hover .tl-tooltip { display: block; }
+.tl-tooltip .tt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.tl-tooltip .tt-year { font-size: 1rem; font-weight: bold; color: #e8a838; }
+.tl-tooltip .tt-hex { font-size: 1.2rem; }
+.tl-tooltip .tt-nature { font-size: 0.75rem; padding: 1px 6px; border-radius: 3px; background: rgba(78,205,196,0.2); color: #4ecdc4; }
+.tl-tooltip .tt-body { font-size: 0.75rem; color: #aab; line-height: 1.7; }
+.tl-tooltip .tt-body .label { color: #e8a838; }
 
 .data-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #222; text-align: left; }
@@ -167,15 +204,106 @@ async function queryAll() {
 
 async function queryTimeline() {
   const year=+document.getElementById('yearInput').value;
-  const resp=await fetch(`${API}/api/hexagram/timeline/${year-20}/${year+20}?step=1`);
+  const resp=await fetch(`${API}/api/hexagram/timeline/${year-15}/${year+15}?step=1`);
   const data=await resp.json();
+
+  // 批量获取解读数据
+  const interpCache = {};
+  const INTERP_KEYS = ['乾','坤','屯','蒙','需','讼','师','比','小畜','履','泰','否','同人','大有','谦','豫','随','蛊','临','观','复','姤','革','鼎','既济','未济'];
+
   let html='<div class="timeline-bar">';
   for(const item of data.data){
-    const isCur=item.year===year;
-    html+=`<div class="timeline-cell" style="background:${yangColor(item.hexagram.yang_count)};${isCur?'box-shadow:0 0 0 2px #ffd93d;':''}" title="${item.year}(${item.ganzhi}) ${item.hexagram.unicode}${item.hexagram.name}"><span>${item.hexagram.unicode}</span><span class="year-label">${item.year%5===0||isCur?item.year:''}</span></div>`;
+    const isCur = item.year===year;
+    const h = item.hexagram;
+    const yangDesc = ['蛰伏期','萌动期','生长期','平衡期','旺盛期','鼎盛期','极盛期'][h.yang_count];
+    const natureMap = {6:'阳极',5:'大吉',4:'吉',3:'平',2:'平',1:'蓄势',0:'阴极'};
+    const nature = natureMap[h.yang_count] || '平';
+
+    html+=`<div class="timeline-cell" style="background:${yangColor(h.yang_count)};${isCur?'box-shadow:0 0 0 2px #ffd93d;':''}">
+      <span>${h.unicode}</span>
+      <span class="year-label">${item.year%5===0||isCur?item.year:''}</span>
+      <div class="tl-tooltip">
+        <div class="tt-header">
+          <span class="tt-year">${item.year}年 (${item.ganzhi})</span>
+          <span class="tt-nature">${nature}</span>
+        </div>
+        <div style="font-size:1.5rem;text-align:center;margin:0.3rem 0;">${h.unicode} ${h.name}卦</div>
+        <div class="tt-body">
+          <span class="label">上卦</span> ${h.upper} · <span class="label">下卦</span> ${h.lower} · <span class="label">阳爻</span> ${h.yang_count}/6<br>
+          <span class="label">阶段</span> ${yangDesc}<br>
+          <span class="label">象义</span> ${getQuickInterp(h.name)}
+        </div>
+      </div>
+    </div>`;
   }
-  html+='</div><p style="font-size:0.7rem;color:#666;">色深=阳气强 | 金框=当前年 | 悬停查看详情</p>';
+  html+='</div><p style="font-size:0.7rem;color:#666;margin-top:0.5rem;">色深=阳气强 | 金框=当前年 | 悬停查看卦象解读</p>';
   document.getElementById('timelineContent').innerHTML=html;
+}
+
+// 快速卦象解读（内置精简版）
+function getQuickInterp(name) {
+  const interps = {
+    '乾':'天行健，自强不息。刚健进取，万物资始。',
+    '坤':'地势坤，厚德载物。柔顺包容，静待时机。',
+    '屯':'云雷屯，经纶草创。万事开头难，利建侯。',
+    '蒙':'山下出泉，启蒙育德。求知若渴，果行育德。',
+    '需':'云上于天，等待时机。有孚光亨，从容蓄势。',
+    '讼':'天与水违行，谨慎止争。作事谋始，不宜冒进。',
+    '师':'地中有水，容民畜众。纪律严明，统帅有方。',
+    '比':'地上有水，亲附团结。辅助和睦，建万国亲诸侯。',
+    '小畜':'风行天上，积蓄渐进。密云不雨，懿文德。',
+    '履':'上天下泽，践行礼仪。履虎尾不咥人，辨上下。',
+    '泰':'天地交，通泰繁荣。小往大来，万物通达。',
+    '否':'天地不交，闭塞不通。俭德辟难，韬光养晦。',
+    '同人':'天与火，同心合作。同人于野，利涉大川。',
+    '大有':'火在天上，丰盛光明。元亨，遏恶扬善。',
+    '谦':'地中有山，谦逊有终。裒多益寡，君子有终。',
+    '豫':'雷出地奋，愉悦顺动。利建侯行师，作乐崇德。',
+    '随':'泽中有雷，随顺适应。元亨利贞，向晦入宴息。',
+    '蛊':'山下有风，整治革新。振民育德，拨乱反正。',
+    '临':'泽上有地，临近教化。元亨利贞，教思无穷。',
+    '观':'风行地上，观察示范。省方观民设教，中正以观天下。',
+    '复':'雷在地中，一阳来复。出入无疾，朋来无咎。',
+    '姤':'天下有风，一阴初生。施命诰四方，警惕阴长。',
+    '革':'泽中有火，变革除旧。己日乃孚，治历明时。',
+    '鼎':'木上有火，鼎新文明。元吉亨，正位凝命。',
+    '既济':'水在火上，既成守成。初吉终乱，思患预防。',
+    '未济':'火在水上，未完过渡。柔得中，慎辨物居方。',
+    '剥':'山附于地，剥落衰退。顺而止之，厚下安宅。',
+    '损':'山下有泽，减损修身。惩忿窒欲，损上益下。',
+    '益':'风雷益，增益进取。见善则迁，有过则改。',
+    '升':'地中生木，积小成大。柔以时升，聚小高大。',
+    '困':'泽无水，困穷守节。致命遂志，困而不失其所。',
+    '井':'木上有水，养民不穷。改邑不改井，往来井井。',
+    '涣':'风行水上，涣散聚合。王假有庙，利涉大川。',
+    '节':'泽上有水，节制有度。制数度，议德行。',
+    '中孚':'泽上有风，诚信感化。豚鱼吉，利涉大川。',
+    '归妹':'泽上有雷，归妹嫁娶。永终知敝，待时而动。',
+    '丰':'雷电皆至，丰盛光大。折狱致刑，明以动。',
+    '旅':'山上有火，旅行在外。明慎用刑，不留狱。',
+    '巽':'随风巽，顺入渐进。申命行事，柔顺而入。',
+    '兑':'丽泽兑，喜悦交流。朋友讲习，说而应乎刚。',
+    '家人':'风自火出，家人齐家。言有物行有恒，正家而天下定。',
+    '睽':'火动而上泽动而下，乖离异见。同而异，异中求同。',
+    '蹇':'山上有水，蹇难险阻。反身修德，见险而能止。',
+    '解':'雷雨作，解除困难。赦过宥罪，动而免乎险。',
+    '明夷':'明入地中，韬光养晦。用晦而明，内文明而外柔顺。',
+    '噬嗑':'雷电噬嗑，刑罚明断。明罚敕法，利用狱。',
+    '贲':'山下有火，文饰修养。明庶政，无敢折狱。',
+    '大壮':'雷在天上，壮盛刚健。非礼弗履，壮于大正。',
+    '遁':'天下有山，退避隐遁。远小人不恶而严，遁世无闷。',
+    '晋':'明出地上，晋升光明。自昭明德，顺而丽乎大明。',
+    '萃':'泽上于地，聚集萃合。除戎器戒不虞，聚而有备。',
+    '大畜':'天在山中，大畜积蓄。多识前言往行，以畜其德。',
+    '无妄':'天下雷行，无妄真实。茂对时育万物，不妄行。',
+    '颐':'山下有雷，颐养正道。慎言语节饮食，养正则吉。',
+    '大过':'泽灭木，大过非常。独立不惧，遁世无闷。',
+    '咸':'山上有泽，感应交通。虚受人，以虚受人。',
+    '恒':'雷风恒，恒久不变。立不易方，久于其道。',
+    '小过':'山上有雷，小过谨慎。行过乎恭，用过乎俭。',
+    '渐':'山上有木，渐进有序。居贤德善俗，进以正。',
+  };
+  return interps[name] || `${name}卦，阴阳交感之象。`;
 }
 
 async function queryTrend() {

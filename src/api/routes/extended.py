@@ -110,7 +110,11 @@ def get_lvlv_system():
 # === 音频合成 ===
 
 @router.get("/audio/lv/{lv_name}")
-def get_lv_audio(lv_name: str, duration: float = Query(default=1.5, ge=0.3, le=5.0)):
+def get_lv_audio(
+    lv_name: str,
+    duration: float = Query(default=1.5, ge=0.3, le=5.0),
+    timbre: str = Query(default='bianqing', description="音色: bianqing(编磬)/guqin(古琴)/xiao(箫)"),
+):
     """播放单个律吕的音频（WAV格式）"""
     from ...core.audio import generate_lv_tone, ToneConfig, TWELVE_LVLV
 
@@ -122,7 +126,7 @@ def get_lv_audio(lv_name: str, duration: float = Query(default=1.5, ge=0.3, le=5
     if not lv:
         return Response(content=b'', status_code=404)
 
-    config = ToneConfig(duration=duration)
+    config = ToneConfig(duration=duration, timbre=timbre)
     wav_data = generate_lv_tone(lv, config)
     return Response(content=wav_data, media_type='audio/wav')
 
