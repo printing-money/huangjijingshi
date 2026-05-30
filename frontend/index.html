@@ -491,8 +491,16 @@ body {
       <span class="mode-tag" id="chatModeTag">prompt模式</span>
     </div>
     <div class="api-key-row">
-      <span>API Key（可选）:</span>
-      <input type="password" id="apiKeyInput" placeholder="填入后可直接对话，不填则生成 prompt 供复制">
+      <select id="modelSelect" style="padding:0.4rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--text);font-size:0.75rem;">
+        <option value="claude-sonnet-4-6">Claude Sonnet 4</option>
+        <option value="claude-opus-4-8">Claude Opus 4</option>
+        <option value="claude-haiku-4-5-20251001">Claude Haiku 4</option>
+        <option value="gpt-4o">GPT-4o</option>
+        <option value="gpt-4o-mini">GPT-4o Mini</option>
+        <option value="deepseek-chat">DeepSeek</option>
+        <option value="qwen-plus">通义千问</option>
+      </select>
+      <input type="password" id="apiKeyInput" placeholder="API Key（可选，不填则生成prompt供复制）">
     </div>
     <div class="chat-messages" id="chatMessages">
       <div class="chat-msg ai">
@@ -807,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 检查 API Key 状态
   document.getElementById('apiKeyInput').addEventListener('input', updateChatMode);
+  document.getElementById('modelSelect').addEventListener('change', updateChatMode);
   updateChatMode();
 });
 
@@ -814,10 +823,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateChatMode() {
   const key = document.getElementById('apiKeyInput').value.trim();
+  const model = document.getElementById('modelSelect');
   const tag = document.getElementById('chatModeTag');
   if (key) {
-    tag.textContent = '直接对话';
+    const modelName = model.options[model.selectedIndex].text;
+    tag.textContent = modelName;
     tag.style.background = 'rgba(78,205,196,0.3)';
+    tag.style.color = 'var(--accent2)';
   } else {
     tag.textContent = 'prompt模式';
     tag.style.background = 'rgba(232,168,56,0.15)';
@@ -838,6 +850,7 @@ async function sendChat() {
   const month = +document.getElementById('monthInput').value;
   const day = +document.getElementById('dayInput').value;
   const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const model = document.getElementById('modelSelect').value;
 
   // 显示用户消息
   appendMessage('user', question);
@@ -847,6 +860,7 @@ async function sendChat() {
     year: year || new Date().getFullYear(),
     month: month || new Date().getMonth() + 1,
     day: day || new Date().getDate(),
+    model,
   };
   if (apiKey) body.api_key = apiKey;
 

@@ -102,11 +102,30 @@ async def chat(req: ChatRequest):
     model = req.model or 'claude-sonnet-4-6'
     messages = build_chat_messages(req.question, year, month, day)
 
-    # 判断是 Anthropic 还是 OpenAI 格式
-    if api_key.startswith('sk-ant-') or 'anthropic' in (req.model or '').lower() or not api_key.startswith('sk-'):
+    # 根据模型名称路由到对应的 API
+    provider = detect_provider(model, api_key)
+
+    if provider == 'anthropic':
         return await call_anthropic(api_key, model, messages)
+    elif provider == 'deepseek':
+        return await call_openai_compatible(api_key, model, messages, 'https://api.deepseek.com/v1/chat/completions')
+    elif provider == 'qwen':
+        return await call_openai_compatible(api_key, model, messages, 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions')
     else:
-        return await call_openai(api_key, req.model or 'gpt-4o', messages)
+        return await call_openai_compatible(api_key, model, messages, 'https://api.openai.com/v1/chat/completions')
+
+
+def detect_provider(model: str, api_key: str) -> str:
+    """根据模型名和 Key 格式判断供应商"""
+    model_lower = model.lower()
+    if 'claude' in model_lower or api_key.startswith('sk-ant-'):
+        return 'anthropic'
+    elif 'deepseek' in model_lower:
+        return 'deepseek'
+    elif 'qwen' in model_lower:
+        return 'qwen'
+    else:
+        return 'openai'
 
 
 async def call_anthropic(api_key: str, model: str, messages: list) -> StreamingResponse:
@@ -157,8 +176,8 @@ async def call_anthropic(api_key: str, model: str, messages: list) -> StreamingR
     return StreamingResponse(generate(), media_type='text/event-stream')
 
 
-async def call_openai(api_key: str, model: str, messages: list) -> StreamingResponse:
-    """调用 OpenAI API（流式）"""
+async def call_openai_compatible(api_key: str, model: str, messages: list, base_url: str) -> StreamingResponse:
+    """调用 OpenAI 兼容 API（流式）— 支持 OpenAI/DeepSeek/通义千问等"""
     import httpx
 
     async def generate():
@@ -166,7 +185,7 @@ async def call_openai(api_key: str, model: str, messages: list) -> StreamingResp
             try:
                 async with client.stream(
                     'POST',
-                    'https://api.openai.com/v1/chat/completions',
+                    base_url,
                     headers={
                         'Authorization': f'Bearer {api_key}',
                         'Content-Type': 'application/json',
