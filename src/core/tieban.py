@@ -26,18 +26,14 @@ from ..data.tieban_tiaowen import get_tiaowen, get_ji_name
 
 # === 铁板神数静态常量 ===
 
-# 纳音五行（简化版，只取五行）
-NAYIN_WUXING = {gz: wx for gz, nay in NAYIN.items()
-               for wx in ['金', '木', '水', '火', '土']
-               if nay.endswith(wx)}
-# 重新构建：从纳音名取最后一个字
+# 纳音五行（从纳音名称提取五行属性）
 NAYIN_WUXING = {}
-for gz, nay in NAYIN.items():
-    if '金' in nay: NAYIN_WUXING[gz] = '金'
-    elif '木' in nay: NAYIN_WUXING[gz] = '木'
-    elif '水' in nay: NAYIN_WUXING[gz] = '水'
-    elif '火' in nay: NAYIN_WUXING[gz] = '火'
-    elif '土' in nay: NAYIN_WUXING[gz] = '土'
+for _gz, _nay in NAYIN.items():
+    if '金' in _nay: NAYIN_WUXING[_gz] = '金'
+    elif '木' in _nay: NAYIN_WUXING[_gz] = '木'
+    elif '水' in _nay: NAYIN_WUXING[_gz] = '水'
+    elif '火' in _nay: NAYIN_WUXING[_gz] = '火'
+    elif '土' in _nay: NAYIN_WUXING[_gz] = '土'
 
 # 14-1: 农历月份 → 数值
 MONTH_VALUES = {
