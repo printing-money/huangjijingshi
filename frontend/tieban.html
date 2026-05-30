@@ -165,9 +165,10 @@ function renderResult(data) {
   const c = data.calculation;
   const input = data.input;
 
-  // 计算当前年龄
+  // 计算当前年龄（用服务器时间，不用浏览器本地时间）
   const birthYear = parseInt(input.birth_time.split('-')[0]);
-  const currentAge = new Date().getFullYear() - birthYear;
+  const serverYear = window.__SERVER_TIME__ ? window.__SERVER_TIME__.year : new Date().getFullYear();
+  const currentAge = serverYear - birthYear;
 
   let html = `
     <h2>📜 排盘结果</h2>
