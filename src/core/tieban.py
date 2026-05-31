@@ -67,6 +67,22 @@ DAY_LIFE_TABLE = {
 # 14-6: 求测时柱纳音五行 → 时运数
 TIME_LUCK_TABLE = {'水': 1, '火': 2, '木': 3, '金': 4, '土': 5}
 
+# 14-3: (先天命数, 年干组) → 五音（来自 ref 14-3.csv）
+WUYIN_TABLE = {
+    (1, '甲己'): '羽', (1, '乙庚'): '徵', (1, '丙辛'): '宫', (1, '丁壬'): '角', (1, '戊癸'): '商',
+    (2, '甲己'): '羽', (2, '乙庚'): '徵', (2, '丙辛'): '宫', (2, '丁壬'): '角', (2, '戊癸'): '商',
+    (3, '甲己'): '徵', (3, '乙庚'): '宫', (3, '丙辛'): '角', (3, '丁壬'): '商', (3, '戊癸'): '羽',
+    (4, '甲己'): '徵', (4, '乙庚'): '宫', (4, '丙辛'): '角', (4, '丁壬'): '商', (4, '戊癸'): '羽',
+    (5, '甲己'): '角', (5, '乙庚'): '商', (5, '丙辛'): '羽', (5, '丁壬'): '徵', (5, '戊癸'): '宫',
+    (6, '甲己'): '角', (6, '乙庚'): '商', (6, '丙辛'): '羽', (6, '丁壬'): '徵', (6, '戊癸'): '宫',
+    (7, '甲己'): '宫', (7, '乙庚'): '角', (7, '丙辛'): '商', (7, '丁壬'): '羽', (7, '戊癸'): '徵',
+    (8, '甲己'): '宫', (8, '乙庚'): '角', (8, '丙辛'): '商', (8, '丁壬'): '羽', (8, '戊癸'): '徵',
+    (9, '甲己'): '商', (9, '乙庚'): '羽', (9, '丙辛'): '徵', (9, '丁壬'): '宫', (9, '戊癸'): '角',
+    (10, '甲己'): '商', (10, '乙庚'): '羽', (10, '丙辛'): '徵', (10, '丁壬'): '宫', (10, '戊癸'): '角',
+    (11, '甲己'): '徵', (11, '乙庚'): '宫', (11, '丙辛'): '角', (11, '丁壬'): '商', (11, '戊癸'): '羽',
+    (12, '甲己'): '徵', (12, '乙庚'): '宫', (12, '丙辛'): '角', (12, '丁壬'): '商', (12, '戊癸'): '羽',
+}
+
 # 十二辟卦名
 TWELVE_HEXAGRAMS = ['复', '临', '泰', '大壮', '夬', '乾', '姤', '遁', '否', '观', '剥', '坤']
 
@@ -144,12 +160,9 @@ class TiebanEngine:
             xiantian += 12
         result.xiantian_num = xiantian
 
-        # Step 2: 五音命数
+        # Step 2: 五音命数（查 14-3 表）
         gan_group = self._get_gan_group(year_gan)
-        # 简化：五音按先天命数取模
-        tone_idx = (xiantian - 1) % 5
-        tone_names = ['宫', '商', '角', '徵', '羽']
-        tone = tone_names[tone_idx]
+        tone = WUYIN_TABLE.get((xiantian, gan_group), '宫')
         result.wuyin_num = TONE_VALUES.get(tone, 5)
 
         # Step 3: 日命数 & 时运数
@@ -161,15 +174,15 @@ class TiebanEngine:
         q_time_nayin_wx = NAYIN_WUXING.get(q_time_gz, '土')
         result.time_luck = TIME_LUCK_TABLE.get(q_time_nayin_wx, 3)
 
-        # Step 4: 考刻
+        # Step 4: 考刻（查 14-7 规则表）
         sum_val = result.day_life + result.time_luck
         is_yang = year_gan in '甲丙戊庚壬'
         if (gender == '男' and is_yang) or (gender == '女' and not is_yang):
-            # 阳男阴女
-            result.moment = '初刻' if sum_val <= 6 else '正刻'
+            # 阳男阴女：sum>6→初刻，sum<=6→正刻
+            result.moment = '初刻' if sum_val > 6 else '正刻'
         else:
-            # 阴男阳女
-            result.moment = '正刻' if sum_val <= 6 else '初刻'
+            # 阴男阳女：sum>6→正刻，sum<=6→初刻
+            result.moment = '正刻' if sum_val > 6 else '初刻'
 
         # Step 5: 本命数
         base_val = result.wuyin_num * 5 + result.day_life + result.time_luck
@@ -179,9 +192,11 @@ class TiebanEngine:
             fact = base_val - 6
         result.benming_num = fact * 30 + lunar_day
 
-        # Step 6: 十二辟卦（优先用14-8精确映射，fallback用取模）
-        from ..data.tieban_benming import get_hexagram_by_benming, get_benming_tiaowen
-        mapped_hex = get_hexagram_by_benming(result.benming_num)
+        # Step 6: 十二辟卦（优先用14-9精确映射：刻别+本命数）
+        from ..data.tieban_benming import get_hexagram_by_benming, get_benming_tiaowen, HEXAGRAM_DETAIL_MAP
+        mapped_hex = HEXAGRAM_DETAIL_MAP.get((result.moment, result.benming_num), '')
+        if not mapped_hex:
+            mapped_hex = get_hexagram_by_benming(result.benming_num)
         if mapped_hex:
             result.hexagram = mapped_hex
         else:
