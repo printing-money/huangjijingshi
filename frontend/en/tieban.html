@@ -78,6 +78,23 @@ h1 { text-align: center; font-size: 1.5rem; color: #e8a838; margin-bottom: 0.5re
     <input type="text" id="queryTime" placeholder="e.g. 2026-05-30 14:00">
   </div>
 
+  <details style="margin-top:0.5rem;">
+    <summary style="color:#8899aa;font-size:0.8rem;cursor:pointer;">AI Translation Settings</summary>
+    <div style="margin-top:0.8rem;">
+      <div class="form-group">
+        <label>API Key <span style="color:#666;font-size:0.7rem;">(for verse translation)</span></label>
+        <div class="form-row">
+          <select id="modelSelect" style="padding:0.5rem;background:#1a2a3a;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:0.8rem;">
+            <option value="claude-sonnet-4-6">Claude Sonnet</option>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="deepseek-chat">DeepSeek</option>
+          </select>
+          <input type="password" id="apiKeyInput" placeholder="sk-... (enables AI translation)" style="flex:1;">
+        </div>
+      </div>
+    </div>
+  </details>
+
   <button class="btn-submit" id="submitBtn" onclick="doPaipan()">Cast the Iron Plate</button>
 
   <div class="result-panel" id="resultPanel">
@@ -172,6 +189,9 @@ async function translateVerses() {
   const liunian = window.__liunianData;
   if (!liunian) return;
 
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const model = document.getElementById('modelSelect').value;
+
   // 收集有断词的条目
   const verses = liunian.filter(l => l.duanyu).map(l => `${l.age}岁: ${l.duanyu}`).join('\n');
 
@@ -181,11 +201,15 @@ ${verses}
 
 Format: "Age X: [English translation]"`;
 
+  const body = { question, year: 2026 };
+  if (apiKey) body.api_key = apiKey;
+  if (model) body.model = model;
+
   try {
     const resp = await fetch('/api/chat/chat', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ question, year: 2026 }),
+      body: JSON.stringify(body),
     });
 
     if (resp.headers.get('content-type')?.includes('text/event-stream')) {
