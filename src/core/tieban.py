@@ -50,22 +50,22 @@ TIME_VALUES = {
 # 14-4: 五音 → 数值
 TONE_VALUES = {'宫': 5, '商': 4, '角': 3, '徵': 2, '羽': 1}
 
-# 14-5: 日柱纳音五行 × 时干 → 日命数（简化）
+# 14-5: 日柱纳音五行 × 求测时干 → 日命数（来自 ref 14-5.csv）
 DAY_LIFE_TABLE = {
-    ('金', '甲'): 4, ('金', '乙'): 3, ('金', '丙'): 2, ('金', '丁'): 1, ('金', '戊'): 5,
-    ('金', '己'): 4, ('金', '庚'): 3, ('金', '辛'): 2, ('金', '壬'): 1, ('金', '癸'): 5,
-    ('木', '甲'): 3, ('木', '乙'): 2, ('木', '丙'): 1, ('木', '丁'): 5, ('木', '戊'): 4,
-    ('木', '己'): 3, ('木', '庚'): 2, ('木', '辛'): 1, ('木', '壬'): 5, ('木', '癸'): 4,
-    ('水', '甲'): 1, ('水', '乙'): 5, ('水', '丙'): 4, ('水', '丁'): 3, ('水', '戊'): 2,
-    ('水', '己'): 1, ('水', '庚'): 5, ('水', '辛'): 4, ('水', '壬'): 3, ('水', '癸'): 2,
-    ('火', '甲'): 2, ('火', '乙'): 1, ('火', '丙'): 5, ('火', '丁'): 4, ('火', '戊'): 3,
-    ('火', '己'): 2, ('火', '庚'): 1, ('火', '辛'): 5, ('火', '壬'): 4, ('火', '癸'): 3,
-    ('土', '甲'): 5, ('土', '乙'): 4, ('土', '丙'): 3, ('土', '丁'): 2, ('土', '戊'): 1,
-    ('土', '己'): 5, ('土', '庚'): 4, ('土', '辛'): 3, ('土', '壬'): 2, ('土', '癸'): 1,
+    ('水', '甲'): 1, ('水', '乙'): 2, ('水', '丙'): 3, ('水', '丁'): 4, ('水', '戊'): 5,
+    ('水', '己'): 1, ('水', '庚'): 2, ('水', '辛'): 3, ('水', '壬'): 4, ('水', '癸'): 5,
+    ('火', '甲'): 2, ('火', '乙'): 3, ('火', '丙'): 4, ('火', '丁'): 5, ('火', '戊'): 1,
+    ('火', '己'): 2, ('火', '庚'): 3, ('火', '辛'): 4, ('火', '壬'): 5, ('火', '癸'): 1,
+    ('木', '甲'): 3, ('木', '乙'): 4, ('木', '丙'): 5, ('木', '丁'): 1, ('木', '戊'): 2,
+    ('木', '己'): 3, ('木', '庚'): 4, ('木', '辛'): 5, ('木', '壬'): 1, ('木', '癸'): 2,
+    ('金', '甲'): 4, ('金', '乙'): 5, ('金', '丙'): 1, ('金', '丁'): 2, ('金', '戊'): 3,
+    ('金', '己'): 4, ('金', '庚'): 5, ('金', '辛'): 1, ('金', '壬'): 2, ('金', '癸'): 3,
+    ('土', '甲'): 5, ('土', '乙'): 1, ('土', '丙'): 2, ('土', '丁'): 3, ('土', '戊'): 4,
+    ('土', '己'): 5, ('土', '庚'): 1, ('土', '辛'): 2, ('土', '壬'): 3, ('土', '癸'): 4,
 }
 
-# 14-6: 时柱纳音五行 → 时运数
-TIME_LUCK_TABLE = {'金': 4, '木': 3, '水': 1, '火': 2, '土': 5}
+# 14-6: 求测时柱纳音五行 → 时运数
+TIME_LUCK_TABLE = {'水': 1, '火': 2, '木': 3, '金': 4, '土': 5}
 
 # 十二辟卦名
 TWELVE_HEXAGRAMS = ['复', '临', '泰', '大壮', '夬', '乾', '姤', '遁', '否', '观', '剥', '坤']
@@ -103,7 +103,8 @@ class TiebanEngine:
     def calculate(self, gender: str, lunar_month: int, lunar_day: int,
                   year_gan: str, year_zhi: str,
                   month_gz: str, day_gz: str, time_gz: str,
-                  is_leap: bool = False) -> TiebanResult:
+                  is_leap: bool = False,
+                  query_time_gz: str = '') -> TiebanResult:
         """
         铁板神数完整排盘
 
@@ -114,8 +115,9 @@ class TiebanEngine:
             year_gan/year_zhi: 年干支
             month_gz: 月柱干支
             day_gz: 日柱干支
-            time_gz: 时柱干支
+            time_gz: 出生时柱干支
             is_leap: 是否闰月
+            query_time_gz: 求测时间的时柱干支（不传则用出生时柱）
         """
         result = TiebanResult(
             gender=gender,
@@ -126,7 +128,10 @@ class TiebanEngine:
         )
 
         time_zhi = time_gz[1] if len(time_gz) >= 2 else '子'
-        time_gan = time_gz[0] if len(time_gz) >= 2 else '甲'
+        # 求测时间：用于计算日命数和时运数
+        q_time_gz = query_time_gz if query_time_gz else time_gz
+        q_time_gan = q_time_gz[0] if len(q_time_gz) >= 2 else '甲'
+        q_time_zhi = q_time_gz[1] if len(q_time_gz) >= 2 else '子'
 
         # Step 1: 先天命数
         calc_month = lunar_month + (1 if is_leap else 0)
@@ -148,11 +153,13 @@ class TiebanEngine:
         result.wuyin_num = TONE_VALUES.get(tone, 5)
 
         # Step 3: 日命数 & 时运数
+        # 日命数 = 出生日柱纳音五行 × 求测时干
         day_nayin_wx = NAYIN_WUXING.get(day_gz, '土')
-        result.day_life = DAY_LIFE_TABLE.get((day_nayin_wx, time_gan), 3)
+        result.day_life = DAY_LIFE_TABLE.get((day_nayin_wx, q_time_gan), 3)
 
-        time_nayin_wx = NAYIN_WUXING.get(time_gz, '土')
-        result.time_luck = TIME_LUCK_TABLE.get(time_nayin_wx, 3)
+        # 时运数 = 求测时柱纳音五行
+        q_time_nayin_wx = NAYIN_WUXING.get(q_time_gz, '土')
+        result.time_luck = TIME_LUCK_TABLE.get(q_time_nayin_wx, 3)
 
         # Step 4: 考刻
         sum_val = result.day_life + result.time_luck

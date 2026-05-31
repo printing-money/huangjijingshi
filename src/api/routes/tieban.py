@@ -45,6 +45,7 @@ class TiebanRequest(BaseModel):
     mother_zodiac: Optional[str] = Field(None, description="母亲属相")
     sibling_count: Optional[int] = Field(None, description="兄弟姐妹数")
     sibling_rank: Optional[int] = Field(None, description="排行")
+    query_time: str = Field(default='', description="求测时间 YYYY-MM-DD HH:MM（不填用当前时间）")
 
 
 @router.post("/paipan")
@@ -72,6 +73,20 @@ def tieban_paipan(req: TiebanRequest):
     bazi_info = convert_to_bazi(dt)
     year_gz = bazi_info['year_gz']
 
+    # 求测时间（不填则用当前时间）
+    query_time_gz = ''
+    if req.query_time:
+        try:
+            q_dt = datetime.datetime.strptime(req.query_time, '%Y-%m-%d %H:%M')
+            q_bazi = convert_to_bazi(q_dt)
+            query_time_gz = q_bazi['time_gz']
+        except ValueError:
+            pass
+    if not query_time_gz:
+        # 默认用当前时间
+        q_bazi = convert_to_bazi(datetime.datetime.now())
+        query_time_gz = q_bazi['time_gz']
+
     # 排盘
     result = tieban_engine.calculate(
         gender=req.gender,
@@ -83,6 +98,7 @@ def tieban_paipan(req: TiebanRequest):
         day_gz=bazi_info['day_gz'],
         time_gz=bazi_info['time_gz'],
         is_leap=bazi_info['is_leap'],
+        query_time_gz=query_time_gz,
     )
 
     # 给流年加上公历年份
