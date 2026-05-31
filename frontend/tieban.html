@@ -92,6 +92,12 @@ h1 { text-align: center; font-size: 1.6rem; color: #e8a838; letter-spacing: 0.3e
     </div>
   </div>
 
+  <div class="form-group">
+    <label>求测时间 <span style="color:#666;font-size:0.75rem;">（不填则用当前时间）</span></label>
+    <input type="text" id="queryTime" placeholder="如 2026-05-30 14:00（留空=现在）">
+    <div class="hint">铁板神数以求测时刻的时柱参与运算，不同时间求测结果略有不同</div>
+  </div>
+
   <details style="margin-top:0.5rem;">
     <summary style="color:#8899aa;font-size:0.8rem;cursor:pointer;">可选：考刻验证信息（提高准确度）</summary>
     <div style="margin-top:0.8rem;">
@@ -134,10 +140,12 @@ async function doPaipan() {
 
   const birthInput = document.getElementById('birthTime').value.trim();
   const birthTime = birthInput.replace('T', ' ');
+  const queryTime = document.getElementById('queryTime').value.trim().replace('T', ' ');
 
   const body = {
     gender: document.getElementById('gender').value,
     birth_time: birthTime,
+    query_time: queryTime || '',
     father_zodiac: document.getElementById('fatherZodiac').value || null,
     mother_zodiac: document.getElementById('motherZodiac').value || null,
     sibling_count: +document.getElementById('siblingCount').value || null,
@@ -191,7 +199,7 @@ function renderResult(data) {
     </div>` : ''}
 
     <h2 style="margin-top:1.5rem;">📖 流年条文 <span style="font-size:0.75rem;color:#8899aa;font-weight:normal;">（共${data.liunian_count}年）</span></h2>
-    <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;flex-wrap:wrap;">
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;flex-wrap:wrap;align-items:center;">
       <button class="age-btn" onclick="showAgeRange(1,30)">1-30岁</button>
       <button class="age-btn" onclick="showAgeRange(31,60)">31-60岁</button>
       <button class="age-btn" onclick="showAgeRange(61,100)">61-100岁</button>
@@ -209,6 +217,21 @@ function renderResult(data) {
     html += `<tr class="ln-row" data-age="${l.age}" ${highlight}><td class="age">${l.age}${isCurrent?'★':''}</td><td style="color:#888;font-size:0.8rem;">${l.year||''}</td><td class="gz">${l.ganzhi}</td><td class="duanyu">${duanyu}</td></tr>`;
   }
   html += '</table>';
+
+  // AI 白话解读区
+  html += `
+    <div style="margin-top:1.5rem;background:#0f1923;border-radius:10px;padding:1.2rem;border:1px solid rgba(78,205,196,0.2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+        <h3 style="font-size:0.9rem;color:#4ecdc4;margin:0;">🤖 AI 白话解读</h3>
+        <button onclick="aiInterpretTieban()" style="padding:0.4rem 0.8rem;background:#4ecdc4;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;">生成解读</button>
+      </div>
+      <div style="font-size:0.75rem;color:#666;margin-bottom:0.5rem;">将古文断词翻译为白话，并结合命理给出综合分析</div>
+      <div id="aiInterpResult" style="font-size:0.85rem;line-height:1.8;color:#ccc;"></div>
+    </div>
+  `;
+
+  // 保存数据供 AI 解读用
+  window.__tiebanData = data;
 
   content.innerHTML = html;
   panel.classList.add('show');
@@ -232,6 +255,85 @@ function showAgeRange(start, end) {
   // 更新按钮状态
   document.querySelectorAll('.age-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
+}
+
+async function aiInterpretTieban() {
+  const resultDiv = document.getElementById('aiInterpResult');
+  const data = window.__tiebanData;
+  if (!data) { resultDiv.innerHTML = '请先排盘'; return; }
+
+  resultDiv.innerHTML = '<span style="color:#4ecdc4;">正在生成白话解读...</span>';
+
+  // 收集当前年龄附近的断词
+  const serverYear = window.__SERVER_TIME__ ? window.__SERVER_TIME__.year : new Date().getFullYear();
+  const birthYear = parseInt(data.input.birth_time.split('-')[0]);
+  const currentAge = serverYear - birthYear + 1;
+
+  const nearbyYears = data.liunian.filter(l => Math.abs(l.age - currentAge) <= 3 && l.duanyu);
+  const benming = data.benming_tiaowen || '';
+
+  // 构建 prompt
+  const question = `请用通俗白话解读以下铁板神数批命结果：
+
+【基本信息】
+性别：${data.input.gender}，出生：${data.input.lunar}
+八字：${data.input.bazi}
+辟卦：${data.calculation.hexagram}，考刻：${data.calculation.moment}
+
+【本命总论】
+${benming || '无'}
+
+【近年流年断词】（当前虚岁${currentAge}）
+${nearbyYears.map(l => `${l.age}岁(${l.year}年${l.ganzhi})：${l.duanyu}`).join('\n')}
+
+请：
+1. 先用白话逐条翻译每条断词的含义
+2. 再综合分析此人近年的运势走向
+3. 给出实际建议（事业/健康/人际等）
+语气古朴但通俗，像一位老先生在解签。`;
+
+  try {
+    const resp = await fetch('/api/chat/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ question, year: serverYear }),
+    });
+
+    if (resp.headers.get('content-type')?.includes('text/event-stream')) {
+      // 流式
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, {stream: true});
+        for (const line of chunk.split('\n')) {
+          if (line.startsWith('data: ') && line.slice(6).trim() !== '[DONE]') {
+            try {
+              const d = JSON.parse(line.slice(6));
+              if (d.text) { text += d.text; resultDiv.innerHTML = text.replace(/\n/g, '<br>'); }
+            } catch(e) {}
+          }
+        }
+      }
+      if (!text) resultDiv.innerHTML = '<span style="color:#888;">无响应</span>';
+    } else {
+      // prompt 模式
+      const d = await resp.json();
+      if (d.mode === 'prompt') {
+        resultDiv.innerHTML = `
+          <p style="color:#e8a838;margin-bottom:0.5rem;">未配置 API Key，已生成解读 prompt：</p>
+          <div style="background:rgba(0,0,0,0.3);padding:0.8rem;border-radius:6px;max-height:200px;overflow-y:auto;">
+            <pre style="white-space:pre-wrap;font-size:0.75rem;color:#aaa;">${d.prompt.replace(/</g,'&lt;')}</pre>
+          </div>
+          <p style="font-size:0.75rem;color:#666;margin-top:0.5rem;">复制上面的内容到 <a href="https://claude.ai" target="_blank" style="color:#4ecdc4;">Claude</a> 或 ChatGPT 即可获得白话解读</p>
+        `;
+      }
+    }
+  } catch(e) {
+    resultDiv.innerHTML = `<span style="color:#e94560;">解读失败: ${e.message}</span>`;
+  }
 }
 </script>
 </body>
