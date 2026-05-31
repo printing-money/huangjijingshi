@@ -79,6 +79,20 @@ h1 { text-align: center; font-size: 1.5rem; color: #e8a838; margin-bottom: 0.5re
   </div>
 
   <details style="margin-top:0.5rem;">
+    <summary style="color:#8899aa;font-size:0.8rem;cursor:pointer;">Optional: Verification Details (improves accuracy)</summary>
+    <div style="margin-top:0.8rem;">
+      <div class="form-row">
+        <div class="form-group"><label>Father's Zodiac</label><input type="text" id="fatherZodiac" placeholder="e.g. Tiger"></div>
+        <div class="form-group"><label>Mother's Zodiac</label><input type="text" id="motherZodiac" placeholder="e.g. Rabbit"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Number of Siblings</label><input type="number" id="siblingCount" placeholder="e.g. 3"></div>
+        <div class="form-group"><label>Birth Order</label><input type="number" id="siblingRank" placeholder="e.g. 2"></div>
+      </div>
+    </div>
+  </details>
+
+  <details style="margin-top:0.5rem;">
     <summary style="color:#8899aa;font-size:0.8rem;cursor:pointer;">AI Translation Settings</summary>
     <div style="margin-top:0.8rem;">
       <div class="form-group">
@@ -120,6 +134,10 @@ async function doPaipan() {
     gender: document.getElementById('gender').value,
     birth_time: document.getElementById('birthTime').value.trim(),
     query_time: document.getElementById('queryTime').value.trim() || '',
+    father_zodiac: document.getElementById('fatherZodiac').value || null,
+    mother_zodiac: document.getElementById('motherZodiac').value || null,
+    sibling_count: +document.getElementById('siblingCount').value || null,
+    sibling_rank: +document.getElementById('siblingRank').value || null,
   };
 
   try {
