@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Huangji Jingshi · Professional Mode</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; }
+nav { background: #0f1923; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid #333; }
+nav .brand { color: #e8a838; font-size: 1rem; font-weight: bold; text-decoration: none; }
+nav a { color: #8899aa; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 4px; }
+nav a:hover, nav a.active { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+
+.header { text-align: center; padding: 2rem; background: linear-gradient(135deg, #16213e, #0f3460); border-bottom: 2px solid #e94560; }
+.header h1 { font-size: 1.4rem; color: #f5f5dc; letter-spacing: 0.1em; }
+.header p { color: #aaa; margin-top: 0.5rem; font-size: 0.8rem; }
+
+.controls { display: flex; gap: 0.8rem; justify-content: center; padding: 1rem; flex-wrap: wrap; background: #16213e; }
+.controls input, .controls button { padding: 0.4rem 0.8rem; border: 1px solid #444; background: #0f3460; color: #e0e0e0; border-radius: 4px; font-size: 0.85rem; }
+.controls button { background: #e94560; border-color: #e94560; cursor: pointer; font-weight: bold; }
+
+.main { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+.panel { background: #16213e; border-radius: 8px; padding: 1.2rem; border: 1px solid #333; }
+.panel h2 { font-size: 1rem; color: #f5f5dc; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 0.8rem; }
+.panel.full { grid-column: 1 / -1; }
+
+.chain-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.6rem; }
+.chain-item { background: #0f3460; border-radius: 6px; padding: 0.6rem; text-align: center; border: 1px solid #333; }
+.chain-item .level { font-size: 0.6rem; color: #888; }
+.chain-item .hex-symbol { font-size: 1.8rem; margin: 0.2rem 0; }
+.chain-item .hex-name { font-size: 0.8rem; color: #f5f5dc; }
+.chain-item .hex-info { font-size: 0.6rem; color: #666; }
+
+.data-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #222; text-align: left; }
+.data-table th { color: #e8a838; font-weight: normal; }
+.loading { text-align: center; padding: 1.5rem; color: #888; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/en" class="brand">皇极经世</a>
+  <a href="/en">Overview</a>
+  <a href="/en/pro" class="active">Professional</a>
+  <a href="/en/tieban">Iron Plate</a>
+  <a href="/cn">中文</a>
+  <a href="/docs">API</a>
+</nav>
+
+<div class="header">
+  <h1>Huangji Jingshi · Professional Divination</h1>
+  <p>Nine-Layer Hexagram Chain · Fractal Self-Similarity · Full Data View</p>
+</div>
+
+<div class="controls">
+  <input type="number" id="yearInput" value="2026" placeholder="Year">
+  <input type="number" id="monthInput" value="5" placeholder="Month">
+  <input type="number" id="dayInput" value="30" placeholder="Day">
+  <input type="number" id="hourInput" value="14" placeholder="Hour">
+  <button onclick="queryAll()">Compute</button>
+</div>
+
+<div class="main">
+  <div class="panel full">
+    <h2>☰ Nine-Layer Hexagram Chain</h2>
+    <div class="chain-grid" id="chainGrid"><div class="loading">Click "Compute" to begin</div></div>
+  </div>
+  <div class="panel">
+    <h2>📐 Cosmic Coordinates</h2>
+    <div id="coordInfo"><div class="loading">—</div></div>
+  </div>
+  <div class="panel">
+    <h2>☯ Five Phases Analysis</h2>
+    <div id="wuxingInfo"><div class="loading">—</div></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+const LAYER_EN = {
+  'yuan':'Epoch (129,600 yrs)','hui':'Era (10,800 yrs)','yun':'Cycle (360 yrs)',
+  'shi':'Generation (30 yrs)','ten_year':'Decade','sui':'Year',
+  'yue_jing':'Bi-month (60d)','xun_wei':'Decan (10d)','ri':'Day','shi_jing':'Hour (2hr)',
+};
+
+async function queryAll() {
+  const year=+document.getElementById('yearInput').value, month=+document.getElementById('monthInput').value;
+  const day=+document.getElementById('dayInput').value, hour=+document.getElementById('hourInput').value;
+
+  const resp = await fetch(`${API}/api/hexagram/datetime`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year,month,day,hour})});
+  const data = await resp.json();
+
+  const layers = Object.entries(LAYER_EN).map(([key,label])=>({key,label}));
+  let html='';
+  for(const l of layers){const h=data[l.key];if(!h)continue;html+=`<div class="chain-item"><div class="level">${l.label}</div><div class="hex-symbol">${h.unicode}</div><div class="hex-name">${h.name}</div><div class="hex-info">${h.upper}/${h.lower} Yang:${h.yang_count}</div></div>`;}
+  document.getElementById('chainGrid').innerHTML=html;
+
+  const c=data.coordinate;
+  document.getElementById('coordInfo').innerHTML=`<table class="data-table"><tr><th>Era</th><td>#${c.hui}</td></tr><tr><th>Cycle</th><td>#${c.yun} (global #${c.global_yun})</td></tr><tr><th>Generation</th><td>#${c.shi} (global #${c.global_shi})</td></tr><tr><th>Year in Gen</th><td>#${c.sui}</td></tr><tr><th>Huangji Year</th><td>${c.huangji_year}</td></tr><tr><th>Gregorian</th><td>${c.gregorian_year} CE</td></tr></table>`;
+
+  const aiResp=await fetch(`${API}/api/ext/ai/interpret/${year}?month=${month}&day=${day}`);
+  const ai=await aiResp.json();
+  const wx=ai.wuxing_analysis.sui;
+  document.getElementById('wuxingInfo').innerHTML=`<table class="data-table"><tr><th>Year Hex</th><td>${ai.hexagram_chain.sui}</td></tr><tr><th>Five Phases</th><td>${wx.description}</td></tr><tr><th>Relation</th><td>${wx.relation} — ${wx.harmony}</td></tr><tr><th>Yin-Yang</th><td>${ai.yin_yang_state}</td></tr><tr><th>Cycle Hex</th><td>${ai.hexagram_chain.yun}</td></tr><tr><th>Gen Hex</th><td>${ai.hexagram_chain.shi}</td></tr></table>`;
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  try { const r=await fetch(`${API}/api`); const i=await r.json(); document.getElementById('yearInput').value=i.year; document.getElementById('monthInput').value=i.month; document.getElementById('dayInput').value=i.day; document.getElementById('hourInput').value=i.hour; } catch(e){}
+});
+</script>
+</body>
+</html>

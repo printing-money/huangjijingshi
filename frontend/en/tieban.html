@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Iron Plate Divination · Destiny Reading</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Georgia', serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; }
+nav { background: #0a1018; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid #222; }
+nav .brand { color: #e8a838; font-size: 1rem; font-weight: bold; text-decoration: none; }
+nav a { color: #8899aa; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 4px; }
+nav a:hover, nav a.active { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+
+.container { max-width: 600px; margin: 0 auto; padding: 2rem 1rem; }
+h1 { text-align: center; font-size: 1.5rem; color: #e8a838; margin-bottom: 0.5rem; }
+.subtitle { text-align: center; color: #8899aa; font-size: 0.85rem; margin-bottom: 2rem; }
+
+.form-group { margin-bottom: 1.2rem; }
+.form-group label { display: block; font-size: 0.8rem; color: #8899aa; margin-bottom: 0.4rem; }
+.form-group input, .form-group select { width: 100%; padding: 0.7rem 1rem; background: #1a2a3a; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 0.9rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.hint { font-size: 0.7rem; color: #666; margin-top: 0.3rem; }
+
+.btn-submit { width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #e94560, #c73e54); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 1.5rem; }
+.btn-submit:hover { opacity: 0.9; }
+
+.result-panel { margin-top: 2rem; background: #1a2a3a; border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(232,168,56,0.2); display: none; }
+.result-panel.show { display: block; }
+.result-panel h2 { font-size: 1rem; color: #e8a838; margin-bottom: 1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+
+.bazi-display { text-align: center; background: #0f1923; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+.bazi-display .bazi { font-size: 1.2rem; color: #4ecdc4; font-weight: bold; }
+.bazi-display .lunar { font-size: 0.8rem; color: #8899aa; margin-top: 0.3rem; }
+
+.calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+.calc-item { background: #0f1923; padding: 0.6rem; border-radius: 6px; text-align: center; }
+.calc-item .label { font-size: 0.6rem; color: #8899aa; }
+.calc-item .value { font-size: 1rem; color: #4ecdc4; font-weight: bold; margin-top: 0.2rem; }
+
+.liunian-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+.liunian-table th { color: #e8a838; font-weight: normal; text-align: left; padding: 0.5rem; border-bottom: 1px solid #333; }
+.liunian-table td { padding: 0.5rem; border-bottom: 1px solid #1a2a3a; }
+.liunian-table .age { color: #e8a838; font-weight: bold; }
+.liunian-table .gz { color: #4ecdc4; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/en" class="brand">皇极经世</a>
+  <a href="/en">Overview</a>
+  <a href="/en/pro">Professional</a>
+  <a href="/en/tieban" class="active">Iron Plate</a>
+  <a href="/cn">中文</a>
+  <a href="/docs">API</a>
+</nav>
+
+<div class="container">
+  <h1>Iron Plate Divination</h1>
+  <p class="subtitle">Tieban Shenshu · Attributed to Shao Yong · 12,000 oracular verses</p>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Gender</label>
+      <select id="gender"><option value="男">Male</option><option value="女">Female</option></select>
+    </div>
+    <div class="form-group">
+      <label>Birth Time</label>
+      <input type="text" id="birthTime" placeholder="e.g. 1990-06-15 14:30">
+      <div class="hint">Gregorian calendar. System auto-converts to lunar/bazi.</div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Divination Time <span style="color:#666;font-size:0.7rem;">(leave empty = now)</span></label>
+    <input type="text" id="queryTime" placeholder="e.g. 2026-05-30 14:00">
+  </div>
+
+  <button class="btn-submit" id="submitBtn" onclick="doPaipan()">Cast the Iron Plate</button>
+
+  <div class="result-panel" id="resultPanel">
+    <div id="resultContent"></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.__SERVER_TIME__) {
+    const t = window.__SERVER_TIME__;
+    const m = String(t.month).padStart(2,'0'), d = String(t.day).padStart(2,'0');
+    const h = String(t.hour).padStart(2,'0'), min = String(t.minute||0).padStart(2,'0');
+    document.getElementById('birthTime').value = `${t.year}-${m}-${d} ${h}:${min}`;
+  }
+});
+
+async function doPaipan() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Casting...';
+
+  const body = {
+    gender: document.getElementById('gender').value,
+    birth_time: document.getElementById('birthTime').value.trim(),
+    query_time: document.getElementById('queryTime').value.trim() || '',
+  };
+
+  try {
+    const resp = await fetch('/api/tieban/paipan', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (data.error) { alert(data.error); return; }
+    renderResult(data);
+  } catch(e) { alert('Failed: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Cast the Iron Plate'; }
+}
+
+function renderResult(data) {
+  const panel = document.getElementById('resultPanel');
+  const content = document.getElementById('resultContent');
+  const c = data.calculation;
+  const input = data.input;
+
+  const serverYear = window.__SERVER_TIME__ ? window.__SERVER_TIME__.year : new Date().getFullYear();
+  const birthYear = parseInt(input.birth_time.split('-')[0]);
+  const currentAge = serverYear - birthYear + 1;
+
+  let html = `
+    <h2>📜 Divination Result</h2>
+    <div class="bazi-display">
+      <div class="bazi">${input.bazi}</div>
+      <div class="lunar">${input.lunar} · ${input.birth_time}</div>
+    </div>
+    <div class="calc-grid">
+      <div class="calc-item"><div class="label">Innate Number</div><div class="value">${c.xiantian_num}</div></div>
+      <div class="calc-item"><div class="label">Destiny Number</div><div class="value">${c.benming_num}</div></div>
+      <div class="calc-item"><div class="label">Hexagram</div><div class="value">${c.hexagram}</div></div>
+      <div class="calc-item"><div class="label">Moment</div><div class="value">${c.moment === '初刻' ? 'First' : 'Second'}</div></div>
+    </div>
+
+    ${data.benming_tiaowen && data.benming_tiaowen !== '未匹配到本命条文' ? `
+    <div style="margin:1rem 0;background:#0f1923;border-radius:8px;padding:1rem;border-left:3px solid #e8a838;">
+      <h3 style="font-size:0.85rem;color:#e8a838;margin-bottom:0.5rem;">Life Overview</h3>
+      <div style="font-size:0.8rem;line-height:1.8;color:#ccc;">${data.benming_tiaowen.replace(/\n/g, '<br>')}</div>
+    </div>` : ''}
+
+    <h2 style="margin-top:1.5rem;">Annual Verses (${data.liunian_count} years)</h2>
+    <table class="liunian-table">
+      <tr><th>Age</th><th>Year</th><th>Pillars</th><th>Oracle</th></tr>
+  `;
+
+  for (const l of data.liunian.slice(0, 30)) {
+    const isCurrent = (l.age === currentAge);
+    const hl = isCurrent ? 'style="background:rgba(232,168,56,0.1);"' : '';
+    html += `<tr ${hl}><td class="age">${l.age}${isCurrent?'★':''}</td><td style="color:#888;">${l.year||''}</td><td class="gz">${l.ganzhi}</td><td>${l.duanyu||'—'}</td></tr>`;
+  }
+  html += '</table>';
+  if (data.liunian_count > 30) html += `<p style="color:#666;font-size:0.75rem;margin-top:0.5rem;">Showing first 30 of ${data.liunian_count} years</p>`;
+
+  content.innerHTML = html;
+  panel.classList.add('show');
+  panel.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

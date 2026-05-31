@@ -62,34 +62,60 @@ def _serve_html(filepath):
     return HTMLResponse("<h1>页面未找到</h1><p><a href='/docs'>API文档</a></p>")
 
 
-@app.get("/en", response_class=HTMLResponse)
-def english():
-    """English version"""
-    return _serve_html(FRONTEND_DIR / "en.html")
-
-
-@app.get("/tieban2", response_class=HTMLResponse)
-def tieban_page_v2():
-    """铁板神数（备用URL，绕过缓存）"""
-    return _serve_html(FRONTEND_DIR / "tieban.html")
-
-
 @app.get("/", response_class=HTMLResponse)
-def index():
-    """首页 - 大众版（白话解读）"""
-    return _serve_html(FRONTEND_DIR / "index.html")
+def root_redirect():
+    """根路径跳转到中文版"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/cn")
 
 
+# === 中文版 ===
+@app.get("/cn", response_class=HTMLResponse)
+def cn_index():
+    """中文大众版"""
+    return _serve_html(FRONTEND_DIR / "cn" / "index.html")
+
+
+@app.get("/cn/pro", response_class=HTMLResponse)
+def cn_pro():
+    """中文专业版"""
+    return _serve_html(FRONTEND_DIR / "cn" / "pro.html")
+
+
+@app.get("/cn/tieban", response_class=HTMLResponse)
+def cn_tieban():
+    """中文铁板批命"""
+    return _serve_html(FRONTEND_DIR / "cn" / "tieban.html")
+
+
+# === English ===
+@app.get("/en", response_class=HTMLResponse)
+def en_index():
+    """English overview"""
+    return _serve_html(FRONTEND_DIR / "en" / "index.html")
+
+
+@app.get("/en/pro", response_class=HTMLResponse)
+def en_pro():
+    """English professional"""
+    return _serve_html(FRONTEND_DIR / "en" / "pro.html")
+
+
+@app.get("/en/tieban", response_class=HTMLResponse)
+def en_tieban():
+    """English Iron Plate"""
+    return _serve_html(FRONTEND_DIR / "en" / "tieban.html")
+
+
+# === 兼容旧路径 ===
 @app.get("/pro", response_class=HTMLResponse)
-def pro():
-    """专业版（完整数据展示）"""
-    return _serve_html(FRONTEND_DIR / "pro.html")
+def pro_compat():
+    return _serve_html(FRONTEND_DIR / "cn" / "pro.html")
 
 
 @app.get("/tieban", response_class=HTMLResponse)
-def tieban_page():
-    """铁板神数批命"""
-    return _serve_html(FRONTEND_DIR / "tieban.html")
+def tieban_compat():
+    return _serve_html(FRONTEND_DIR / "cn" / "tieban.html")
 
 
 @app.get("/api")
