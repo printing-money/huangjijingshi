@@ -147,20 +147,92 @@ function renderResult(data) {
 
     <h2 style="margin-top:1.5rem;">Annual Verses (${data.liunian_count} years)</h2>
     <table class="liunian-table">
-      <tr><th>Age</th><th>Year</th><th>Pillars</th><th>Oracle</th></tr>
+      <tr><th>Age</th><th>Year</th><th>Pillars</th><th>Oracle (Chinese)</th><th>Translation</th></tr>
   `;
 
   for (const l of data.liunian.slice(0, 30)) {
     const isCurrent = (l.age === currentAge);
     const hl = isCurrent ? 'style="background:rgba(232,168,56,0.1);"' : '';
-    html += `<tr ${hl}><td class="age">${l.age}${isCurrent?'★':''}</td><td style="color:#888;">${l.year||''}</td><td class="gz">${l.ganzhi}</td><td>${l.duanyu||'—'}</td></tr>`;
+    html += `<tr ${hl}><td class="age">${l.age}${isCurrent?'★':''}</td><td style="color:#888;">${l.year||''}</td><td class="gz">${l.ganzhi}</td><td style="font-size:0.75rem;">${l.duanyu||'—'}</td><td class="en-verse" id="verse-${l.age}" style="font-style:italic;color:#4ecdc4;font-size:0.75rem;">—</td></tr>`;
   }
   html += '</table>';
   if (data.liunian_count > 30) html += `<p style="color:#666;font-size:0.75rem;margin-top:0.5rem;">Showing first 30 of ${data.liunian_count} years</p>`;
 
+  html += `<button onclick="translateVerses()" style="margin-top:1rem;padding:0.5rem 1rem;background:#4ecdc4;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;">🌐 Translate All Verses</button>`;
+
+  // 保存数据
+  window.__liunianData = data.liunian.slice(0, 30);
+
   content.innerHTML = html;
   panel.classList.add('show');
   panel.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function translateVerses() {
+  const liunian = window.__liunianData;
+  if (!liunian) return;
+
+  // 收集有断词的条目
+  const verses = liunian.filter(l => l.duanyu).map(l => `${l.age}岁: ${l.duanyu}`).join('\n');
+
+  const question = `Translate each of these Chinese divination verses into elegant English poetry. Keep each translation on one line, prefixed with the age number. Preserve imagery and rhythm.
+
+${verses}
+
+Format: "Age X: [English translation]"`;
+
+  try {
+    const resp = await fetch('/api/chat/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ question, year: 2026 }),
+    });
+
+    if (resp.headers.get('content-type')?.includes('text/event-stream')) {
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, {stream: true});
+        for (const line of chunk.split('\n')) {
+          if (line.startsWith('data: ') && line.slice(6).trim() !== '[DONE]') {
+            try { const d = JSON.parse(line.slice(6)); if (d.text) fullText += d.text; } catch(e) {}
+          }
+        }
+      }
+      // 解析翻译结果
+      parseTranslations(fullText);
+    } else {
+      const d = await resp.json();
+      if (d.mode === 'prompt') {
+        // 无 API Key，用内置简单翻译
+        for (const l of liunian) {
+          if (l.duanyu) {
+            const el = document.getElementById(`verse-${l.age}`);
+            if (el) el.textContent = '(Set API Key for AI translation)';
+          }
+        }
+      }
+    }
+  } catch(e) {
+    console.log('Translation failed:', e);
+  }
+}
+
+function parseTranslations(text) {
+  // 解析 "Age X: translation" 或 "X岁: translation" 格式
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const match = line.match(/(?:Age\s*)?(\d+)[\s岁:：]+(.+)/i);
+    if (match) {
+      const age = parseInt(match[1]);
+      const translation = match[2].trim();
+      const el = document.getElementById(`verse-${age}`);
+      if (el) el.textContent = translation;
+    }
+  }
 }
 </script>
 </body>
