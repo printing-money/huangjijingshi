@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Huangji Jingshi · Cosmic Cycle Divination</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0f1923; --card: #1a2a3a; --accent: #e8a838; --accent2: #4ecdc4;
+  --text: #e8e8e8; --dim: #8899aa; --danger: #e94560;
+}
+body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.7; }
+
+nav { background: #0a1018; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid #222; }
+nav .brand { color: var(--accent); font-size: 1rem; font-weight: bold; text-decoration: none; }
+nav a { color: var(--dim); text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 4px; }
+nav a:hover, nav a.active { color: var(--text); background: rgba(255,255,255,0.05); }
+
+.hero { text-align: center; padding: 3rem 1rem 2rem; background: linear-gradient(180deg, #1a2a3a 0%, var(--bg) 100%); }
+.hero h1 { font-size: 1.8rem; font-weight: 300; color: var(--accent); letter-spacing: 0.1em; }
+.hero .subtitle { color: var(--dim); margin-top: 0.5rem; font-size: 0.9rem; font-style: italic; }
+
+.container { max-width: 700px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+.input-bar { display: flex; gap: 0.5rem; justify-content: center; padding: 1.5rem 0; flex-wrap: wrap; }
+.input-bar input { width: 70px; padding: 0.5rem; background: var(--card); border: 1px solid rgba(255,255,255,0.1); color: var(--text); border-radius: 6px; text-align: center; font-size: 0.9rem; }
+.input-bar button { padding: 0.5rem 1.2rem; background: var(--accent); color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+.card { background: var(--card); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(232,168,56,0.15); }
+.card h2 { font-size: 1rem; color: var(--accent); margin-bottom: 1rem; font-weight: normal; }
+
+.hex-display { text-align: center; padding: 1.5rem 0; }
+.hex-display .symbol { font-size: 3.5rem; }
+.hex-display .name { font-size: 1.2rem; margin: 0.5rem 0; }
+.hex-display .meaning { font-size: 0.9rem; color: var(--accent); font-style: italic; }
+
+.reading { background: rgba(78,205,196,0.05); border-left: 3px solid var(--accent2); padding: 1rem 1.2rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: 0.9rem; }
+.reading .label { font-size: 0.7rem; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+
+.layers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
+.layer-item { background: #0f1923; border-radius: 8px; padding: 0.8rem; text-align: center; border: 1px solid #333; }
+.layer-item .level { font-size: 0.65rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.layer-item .sym { font-size: 1.5rem; margin: 0.3rem 0; }
+.layer-item .nm { font-size: 0.85rem; }
+
+.energy-bar { display: flex; align-items: center; gap: 0.8rem; margin: 1rem 0; }
+.energy-label { font-size: 0.8rem; color: var(--dim); min-width: 80px; }
+.energy-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.energy-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #1e40af, #f59e0b); }
+
+details { margin: 1.5rem 0; }
+details summary { color: var(--accent); cursor: pointer; font-size: 0.9rem; }
+details p { margin-top: 0.5rem; font-size: 0.85rem; color: var(--dim); line-height: 1.8; }
+
+.footer { text-align: center; padding: 2rem; color: var(--dim); font-size: 0.75rem; }
+.footer a { color: var(--accent2); text-decoration: none; }
+.loading { text-align: center; padding: 2rem; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">皇极经世</a>
+  <a href="/">中文</a>
+  <a href="/en" class="active">English</a>
+  <a href="/pro">Pro</a>
+  <a href="/tieban">Iron Plate</a>
+  <a href="/docs">API</a>
+</nav>
+
+<div class="hero">
+  <h1>The Book of Supreme World Ordering</h1>
+  <p class="subtitle">Shao Yong's cosmic cycle system · Divining the patterns of heaven and earth</p>
+</div>
+
+<div class="container">
+  <div class="input-bar">
+    <input type="number" id="yearInput" placeholder="Year">
+    <input type="number" id="monthInput" placeholder="Mo">
+    <input type="number" id="dayInput" placeholder="Day">
+    <input type="number" id="hourInput" placeholder="Hr">
+    <button onclick="doQuery()">Divine</button>
+  </div>
+
+  <div class="card" id="mainCard">
+    <div class="loading">Consulting the oracle...</div>
+  </div>
+
+  <details>
+    <summary>What is this?</summary>
+    <p>
+      <strong>Huangji Jingshi</strong> (皇极经世, "The Book of Supreme World Ordering") was written by the Song Dynasty philosopher <strong>Shao Yong</strong> (1011–1077 CE). It maps the entire history of the universe into a mathematical framework of nested time cycles.
+    </p>
+    <p style="margin-top:0.5rem;">
+      <strong>How to read the result:</strong><br>
+      · <strong>Yearly Hexagram</strong> — The dominant energy pattern of the year, like an annual "weather forecast" for civilization<br>
+      · <strong>Yang Energy</strong> — Higher = expansive, active period. Lower = contractive, reflective period<br>
+      · <strong>Five Phases</strong> — The relationship between inner and outer trigrams (generating = harmony, controlling = tension)<br>
+      · <strong>Time Layers</strong> — From cosmic epoch (129,600 years) down to the current two-hour period
+    </p>
+    <p style="margin-top:0.5rem;">
+      <strong>The time hierarchy:</strong><br>
+      Epoch (129,600 yrs) → Era (10,800 yrs) → Cycle (360 yrs) → Generation (30 yrs) → Year → Month → Day → Hour<br>
+      Each layer has its own hexagram describing the "climate" of that period.
+    </p>
+  </details>
+
+  <div class="footer">
+    <a href="/docs">API Documentation</a> · Based on Shao Yong's "Huangji Jingshi" (皇极经世書) · Song Dynasty, c. 1060 CE
+  </div>
+</div>
+
+<script>
+const API = '';
+
+const NATURE_EN = {
+  '大吉': '🌟 Greatly Auspicious — All things flourish',
+  '吉': '☀️ Auspicious — Favorable conditions prevail',
+  '平': '🌤️ Neutral — Steady and balanced',
+  '凶': '🌧️ Challenging — Caution advised',
+  '大凶': '⛈️ Greatly Challenging — Retreat and conserve',
+};
+
+const ENERGY_EN = [
+  'Dormancy · Stillness before the dawn',
+  'Stirring · First light of renewal',
+  'Growth · Rising momentum',
+  'Balance · Yin and Yang in harmony',
+  'Vigor · Active expansion',
+  'Zenith · Full radiance',
+  'Apex · The turning point approaches',
+];
+
+const WUXING_EN = {
+  '比和': 'Inner and outer in resonance — harmony',
+  '下生上': 'Inner nourishes outer — smooth ascent',
+  '上生下': 'Outer feeds inner — slight depletion',
+  '上克下': 'External pressure — resilience needed',
+  '下克上': 'Inner force breaks through — transformation',
+};
+
+const LAYER_EN = {
+  '元': 'Epoch (129,600 yrs)', '会': 'Era (10,800 yrs)', '运': 'Cycle (360 yrs)',
+  '世': 'Generation (30 yrs)', '十年律卦': 'Decade', '岁': 'This Year',
+  '月经': 'Bi-month (60 days)', '旬纬': 'Decan (10 days)', '日': 'Today', '时经': 'This Hour',
+};
+
+async function doQuery() {
+  const year = +document.getElementById('yearInput').value;
+  const month = +document.getElementById('monthInput').value;
+  const day = +document.getElementById('dayInput').value;
+  const hour = +document.getElementById('hourInput').value;
+
+  const card = document.getElementById('mainCard');
+  card.innerHTML = '<div class="loading">Consulting the oracle...</div>';
+
+  try {
+    const aiResp = await fetch(`${API}/api/ext/ai/interpret/${year}?month=${month}&day=${day}`);
+    const ai = await aiResp.json();
+
+    const chainResp = await fetch(`${API}/api/hexagram/datetime`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({year, month, day, hour})
+    });
+    const chain = await chainResp.json();
+
+    renderResult(ai, chain);
+  } catch(e) {
+    card.innerHTML = `<div class="loading" style="color:var(--danger)">Connection failed. Ensure the server is running.</div>`;
+  }
+}
+
+function renderResult(ai, chain) {
+  const sui = chain.sui;
+  const yangN = sui.yang_count;
+  const energyPct = Math.round(yangN / 6 * 100);
+  const nature = ai.interpretation.nature || '平';
+  const wuxingRel = ai.wuxing_analysis.sui.relation;
+
+  // Hexagram name translations (selected)
+  const hexNames = {
+    '乾':'The Creative','坤':'The Receptive','屯':'Difficulty at the Beginning','蒙':'Youthful Folly',
+    '需':'Waiting','讼':'Conflict','师':'The Army','比':'Holding Together','泰':'Peace','否':'Standstill',
+    '同人':'Fellowship','大有':'Great Possession','谦':'Modesty','豫':'Enthusiasm','复':'Return',
+    '姤':'Coming to Meet','革':'Revolution','鼎':'The Cauldron','既济':'After Completion','未济':'Before Completion',
+    '临':'Approach','观':'Contemplation','噬嗑':'Biting Through','剥':'Splitting Apart','无妄':'Innocence',
+    '大畜':'Great Accumulation','颐':'Nourishment','大过':'Preponderance of the Great','坎':'The Abysmal',
+    '离':'The Clinging','咸':'Influence','恒':'Duration','遁':'Retreat','大壮':'Great Power',
+    '晋':'Progress','明夷':'Darkening of the Light','家人':'The Family','睽':'Opposition',
+    '蹇':'Obstruction','解':'Deliverance','损':'Decrease','益':'Increase','夬':'Breakthrough',
+    '萃':'Gathering','升':'Pushing Upward','困':'Oppression','井':'The Well',
+    '震':'The Arousing','艮':'Keeping Still','渐':'Development','归妹':'The Marrying Maiden',
+    '丰':'Abundance','旅':'The Wanderer','巽':'The Gentle','兑':'The Joyous',
+    '涣':'Dispersion','节':'Limitation','中孚':'Inner Truth','小过':'Small Preponderance',
+  };
+
+  const hexEn = hexNames[sui.name] || sui.name;
+
+  let html = `
+    <div class="hex-display">
+      <div class="symbol">${sui.unicode}</div>
+      <div class="name">${sui.name} · ${hexEn}</div>
+      <div class="meaning">Hexagram of the Year ${ai.year}</div>
+    </div>
+
+    <div class="reading">
+      <div class="label">Interpretation</div>
+      ${NATURE_EN[nature] || '🌤️ ' + nature}<br>
+      ${ai.interpretation.overall ? ai.interpretation.overall.split('；').map(s => s.trim()).join('<br>') : ''}
+    </div>
+
+    <div class="energy-bar">
+      <span class="energy-label">Yang Energy</span>
+      <div class="energy-track"><div class="energy-fill" style="width:${energyPct}%"></div></div>
+      <span style="font-size:0.8rem;color:var(--dim);">${yangN}/6</span>
+    </div>
+    <div style="font-size:0.8rem;color:var(--dim);margin-left:90px;margin-top:-0.3rem;">
+      ${ENERGY_EN[yangN]}
+    </div>
+
+    <div style="margin-top:1rem;font-size:0.85rem;">
+      <span style="color:var(--accent);">Five Phases:</span>
+      ${ai.wuxing_analysis.sui.description}
+      <span style="color:var(--accent2);margin-left:0.5rem;">${WUXING_EN[wuxingRel] || ''}</span>
+    </div>
+
+    <h2 style="margin-top:1.5rem;font-size:0.9rem;color:var(--dim);cursor:pointer;" onclick="document.getElementById('layersDiv').style.display=document.getElementById('layersDiv').style.display==='none'?'grid':'none'">
+      ▾ All Nine Layers (from cosmos to this moment)
+    </h2>
+    <div class="layers" id="layersDiv" style="display:none;">
+  `;
+
+  const layers = [
+    {key:'yuan',label:'元'},{key:'hui',label:'会'},{key:'yun',label:'运'},
+    {key:'shi',label:'世'},{key:'ten_year',label:'十年律卦'},{key:'sui',label:'岁'},
+    {key:'yue_jing',label:'月经'},{key:'xun_wei',label:'旬纬'},{key:'ri',label:'日'},{key:'shi_jing',label:'时经'},
+  ];
+  for (const l of layers) {
+    const h = chain[l.key];
+    if (!h) continue;
+    const en = LAYER_EN[l.label] || l.label;
+    html += `<div class="layer-item"><div class="level">${en}</div><div class="sym">${h.unicode}</div><div class="nm">${h.name}</div></div>`;
+  }
+  html += '</div>';
+
+  document.getElementById('mainCard').innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  let y, m, d, h;
+  try {
+    const resp = await fetch(`${API}/api`);
+    const info = await resp.json();
+    y = info.year; m = info.month; d = info.day; h = info.hour;
+  } catch(e) {
+    const now = new Date();
+    y = now.getFullYear(); m = now.getMonth()+1; d = now.getDate(); h = now.getHours();
+  }
+  document.getElementById('yearInput').value = y;
+  document.getElementById('monthInput').value = m;
+  document.getElementById('dayInput').value = d;
+  document.getElementById('hourInput').value = h;
+  doQuery();
+});
+</script>
+</body>
+</html>
