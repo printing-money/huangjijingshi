@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>八字排盘 · 四柱命理</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; }
+nav { background: #0a1018; padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid #222; }
+nav .brand { color: #e8a838; font-size: 1rem; font-weight: bold; text-decoration: none; }
+nav a { color: #8899aa; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0.8rem; border-radius: 4px; }
+nav a:hover, nav a.active { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+
+.container { max-width: 700px; margin: 0 auto; padding: 2rem 1rem; }
+h1 { text-align: center; font-size: 1.5rem; color: #e8a838; letter-spacing: 0.3em; margin-bottom: 0.5rem; }
+.subtitle { text-align: center; color: #8899aa; font-size: 0.85rem; margin-bottom: 2rem; }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.8rem; color: #8899aa; margin-bottom: 0.4rem; }
+.form-group input, .form-group select { width: 100%; padding: 0.7rem 1rem; background: #1a2a3a; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 0.9rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.hint { font-size: 0.7rem; color: #666; margin-top: 0.3rem; }
+
+.btn-submit { width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #4ecdc4, #2ea8a0); color: #000; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 1rem; letter-spacing: 0.2em; }
+.btn-submit:hover { opacity: 0.9; }
+
+.result { margin-top: 2rem; display: none; }
+.result.show { display: block; }
+
+.bazi-box { background: #1a2a3a; border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(78,205,196,0.2); margin-bottom: 1rem; }
+.bazi-box h2 { font-size: 0.9rem; color: #4ecdc4; margin-bottom: 1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+
+.four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; text-align: center; margin-bottom: 1rem; }
+.pillar { background: #0f1923; border-radius: 8px; padding: 0.8rem 0.5rem; }
+.pillar .label { font-size: 0.65rem; color: #888; }
+.pillar .gan { font-size: 1.3rem; color: #e8a838; }
+.pillar .zhi { font-size: 1.3rem; color: #4ecdc4; }
+.pillar .ss { font-size: 0.7rem; color: #888; margin-top: 0.3rem; }
+.pillar .ny { font-size: 0.65rem; color: #666; margin-top: 0.2rem; }
+
+.wuxing-bar { display: flex; gap: 2px; height: 24px; margin: 0.5rem 0; border-radius: 4px; overflow: hidden; }
+.wuxing-bar div { display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: #000; font-weight: bold; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(78,205,196,0.15); color: #4ecdc4; }
+.tag.warn { background: rgba(233,69,96,0.15); color: #e94560; }
+.tag.gold { background: rgba(232,168,56,0.15); color: #e8a838; }
+
+.dayun-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+.dayun-item { background: #0f1923; border-radius: 6px; padding: 0.5rem; text-align: center; font-size: 0.8rem; }
+.dayun-item .age { font-size: 0.65rem; color: #888; }
+.dayun-item .gz { color: #4ecdc4; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/cn" class="brand">皇极经世</a>
+  <a href="/cn">大众版</a>
+  <a href="/cn/pro">专业版</a>
+  <a href="/cn/tieban">铁板批命</a>
+  <a href="/cn/bazi" class="active">八字排盘</a>
+  <a href="/en">English</a>
+</nav>
+
+<div class="container">
+  <h1>八 字 排 盘</h1>
+  <p class="subtitle">四柱命理 · 十神分析 · 五行强弱 · 大运流年</p>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>性别</label>
+      <select id="gender"><option value="男">男</option><option value="女">女</option></select>
+    </div>
+    <div class="form-group">
+      <label>出生时间</label>
+      <input type="text" id="birthTime" placeholder="如 1990-06-15 14:30">
+      <div class="hint">公历，系统自动转换</div>
+    </div>
+  </div>
+
+  <button class="btn-submit" onclick="doPaipan()">排 盘</button>
+
+  <div class="result" id="result">
+    <div id="resultContent"></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.__SERVER_TIME__) {
+    const t = window.__SERVER_TIME__;
+    document.getElementById('birthTime').value = `${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')} ${String(t.hour).padStart(2,'0')}:00`;
+  }
+});
+
+async function doPaipan() {
+  const body = {
+    gender: document.getElementById('gender').value,
+    birth_time: document.getElementById('birthTime').value.trim(),
+  };
+
+  try {
+    const resp = await fetch('/api/bazi/paipan', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (data.error) { alert(data.error); return; }
+    renderResult(data);
+  } catch(e) { alert('排盘失败: ' + e.message); }
+}
+
+function renderResult(data) {
+  const wx_colors = {'金':'#D4AF37','木':'#228B22','水':'#1E90FF','火':'#DC143C','土':'#CD853F'};
+  const input = data.input;
+  const pillars = input.bazi.split(' ');
+
+  let html = `
+    <div class="bazi-box">
+      <h2>四柱八字</h2>
+      <div style="text-align:center;font-size:0.8rem;color:#888;margin-bottom:0.8rem;">${input.lunar} · ${input.birth_time}</div>
+      <div class="four-pillars">
+        ${['年柱','月柱','日柱','时柱'].map((label, i) => {
+          const gz = pillars[i] || '';
+          const ss_key = i === 0 ? '年干' : i === 1 ? '月干' : i === 3 ? '时干' : '';
+          const ss = ss_key ? (data.shishen[ss_key] || '') : '日主';
+          const ny = data.nayin[['年','月','日','时'][i]] || '';
+          return `<div class="pillar"><div class="label">${label}</div><div class="gan">${gz[0]||''}</div><div class="zhi">${gz[1]||''}</div><div class="ss">${ss}</div><div class="ny">${ny}</div></div>`;
+        }).join('')}
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:1rem 0 0.5rem;">
+        <span style="font-size:0.8rem;">五行分数</span>
+        <span style="font-size:0.8rem;color:${data.day_master.is_strong?'#e94560':'#4ecdc4'};">${data.day_master.strength}（日主${data.day_master.gan}${data.day_master.wuxing}）</span>
+      </div>
+      <div class="wuxing-bar">
+        ${Object.entries(data.wuxing_score).map(([wx, score]) => {
+          const total = Object.values(data.wuxing_score).reduce((a,b)=>a+b,0);
+          const pct = Math.round(score/total*100);
+          return `<div style="width:${pct}%;background:${wx_colors[wx]}">${wx}${score}</div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="bazi-box">
+      <h2>格局 · 关系 · 神煞</h2>
+      <div style="margin-bottom:0.5rem;"><span style="color:#e8a838;">格局：</span>${data.geju}</div>
+      ${data.rizhu_duanyu ? `<div style="margin-bottom:0.8rem;font-size:0.8rem;color:#ccc;border-left:3px solid #e8a838;padding-left:0.8rem;">${data.rizhu_duanyu}</div>` : ''}
+      <div class="tags">
+        ${data.relations.map(r => `<span class="tag ${r.includes('冲')?'warn':r.includes('合')?'gold':''}">${r}</span>`).join('')}
+      </div>
+      <div class="tags" style="margin-top:0.5rem;">
+        ${data.shenshas.map(s => `<span class="tag gold">${s}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="bazi-box">
+      <h2>大运</h2>
+      <div class="dayun-grid">
+        ${data.dayun.map(d => `<div class="dayun-item"><div class="age">${d.start_age}岁起</div><div class="gz">${d.ganzhi}</div><div style="font-size:0.6rem;color:#666;">${d.nayin}</div></div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('resultContent').innerHTML = html;
+  document.getElementById('result').classList.add('show');
+}
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@ from .routes.history import router as history_router
 from .routes.extended import router as extended_router
 from .routes.chat import router as chat_router
 from .routes.tieban import router as tieban_router
+from .routes.bazi import router as bazi_router
 
 app = FastAPI(
     title="皇极经世推演系统",
@@ -38,6 +39,7 @@ app.include_router(history_router, prefix="/api/history", tags=["历史验证"])
 app.include_router(extended_router, prefix="/api/ext", tags=["卦辞·唱和·AI解读"])
 app.include_router(chat_router, prefix="/api/chat", tags=["AI对话"])
 app.include_router(tieban_router, prefix="/api/tieban", tags=["铁板神数"])
+app.include_router(bazi_router, prefix="/api/bazi", tags=["八字排盘"])
 
 # 前端页面目录
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
@@ -88,6 +90,12 @@ def cn_tieban():
     return _serve_html(FRONTEND_DIR / "cn" / "tieban.html")
 
 
+@app.get("/cn/bazi", response_class=HTMLResponse)
+def cn_bazi():
+    """中文八字排盘"""
+    return _serve_html(FRONTEND_DIR / "cn" / "bazi.html")
+
+
 # === English ===
 @app.get("/en", response_class=HTMLResponse)
 def en_index():
@@ -105,6 +113,12 @@ def en_pro():
 def en_tieban():
     """English Iron Plate"""
     return _serve_html(FRONTEND_DIR / "en" / "tieban.html")
+
+
+@app.get("/en/bazi", response_class=HTMLResponse)
+def en_bazi():
+    """English Bazi"""
+    return _serve_html(FRONTEND_DIR / "en" / "bazi.html")
 
 
 # === 兼容旧路径 ===
