@@ -69,6 +69,10 @@ class BaziResult:
     # 日柱断语
     rizhu_duanyu: str = ''
 
+    # 调候用神
+    tiaohou: str = ''
+    jinbuhuan: str = ''
+
     # 扩展信息
     canggan_detail: list = field(default_factory=list)   # 四柱藏干详情
     changsheng_detail: list = field(default_factory=list) # 四柱长生状态
@@ -128,6 +132,11 @@ class BaziEngine:
 
         # 日柱断语
         result.rizhu_duanyu = RIZHU_DUANYU.get(day_gz, '')
+
+        # 调候用神
+        from ..data.bazi_advanced import get_tiaohou, get_jinbuhuan
+        result.tiaohou = get_tiaohou(day_gz[0], month_gz[1])
+        result.jinbuhuan = get_jinbuhuan(day_gz[0], month_gz[1])
 
         # 格局
         result.geju = self._calc_geju(result)
