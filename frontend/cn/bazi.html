@@ -180,7 +180,8 @@ function renderResult(data) {
     <!-- 格局 · 调候 · 关系 · 神煞 -->
     <div class="bazi-box">
       <h2>格局 · 调候 · 关系 · 神煞</h2>
-      <div style="margin-bottom:0.5rem;font-size:0.9rem;"><span style="color:#e8a838;">格局：</span><strong>${data.geju}</strong></div>
+      <div style="margin-bottom:0.5rem;font-size:0.9rem;"><span style="color:#e8a838;">格局：</span><strong>${data.geju.split('\n')[0]}</strong></div>
+      ${data.geju.includes('\n') ? `<div style="margin-bottom:0.5rem;font-size:0.75rem;color:#aaa;background:#0f1923;padding:0.5rem 0.8rem;border-radius:6px;line-height:1.6;">${data.geju.split('\n').slice(1).join('<br>')}</div>` : ''}
       ${data.tiaohou ? `<div style="margin-bottom:0.5rem;font-size:0.8rem;"><span style="color:#4ecdc4;">调候用神：</span>${data.tiaohou}</div>` : ''}
       ${data.jinbuhuan ? `<div style="margin-bottom:0.5rem;font-size:0.8rem;"><span style="color:#4ecdc4;">金不换大运：</span>${data.jinbuhuan}</div>` : ''}
       ${data.rizhu_duanyu ? `<div style="margin-bottom:0.8rem;font-size:0.85rem;color:#ccc;border-left:3px solid #e8a838;padding-left:0.8rem;line-height:1.7;">日柱断语：${data.rizhu_duanyu}</div>` : ''}

@@ -505,24 +505,61 @@ class BaziEngine:
         return shenshas
 
     def _calc_geju(self, result: BaziResult) -> str:
-        """判断格局（简化版）"""
-        month_ss = result.shishen.get('月干', '') or result.shishen.get('月支', '')
+        """
+        格局判断（增强版）
 
-        if month_ss == '财' or month_ss == '才':
-            return '财格'
-        elif month_ss == '官':
-            return '正官格'
-        elif month_ss == '杀':
-            return '七杀格'
-        elif month_ss == '印' or month_ss == '枭':
-            return '印格'
-        elif month_ss == '食':
-            return '食神格'
-        elif month_ss == '伤':
-            return '伤官格'
-        elif month_ss == '比' or month_ss == '劫':
-            return '比劫格'
-        return '杂格'
+        规则：
+        1. 以月支本气透干为正格
+        2. 月支本气不透，看月支藏干中气/余气是否透干
+        3. 都不透则看月支本气十神定格
+        4. 附加格局详细分析（各格局在当前月令的评价）
+        """
+        from ..data.bazi_advanced import get_geju_analysis
+
+        ri_gan = result.day_master
+        month_zhi = result.month_gz[1] if len(result.month_gz) >= 2 else ''
+        ss_map = SHISHEN.get(ri_gan, {})
+
+        # 月支藏干
+        month_canggan = ZHI_CANGGAN.get(month_zhi, [])
+
+        # 检查月支藏干是否透出天干
+        four_gans = [result.year_gz[0], result.month_gz[0], result.time_gz[0]]
+        geju_name = ''
+
+        for cg in month_canggan:
+            if cg in four_gans and cg != ri_gan:
+                ss = ss_map.get(cg, '')
+                if ss:
+                    geju_name = self._ss_to_geju_name(ss)
+                    break
+
+        # 如果没有透干，用月支本气定格
+        if not geju_name and month_canggan:
+            main_ss = ss_map.get(month_canggan[0], '')
+            geju_name = self._ss_to_geju_name(main_ss)
+
+        if not geju_name:
+            geju_name = '杂格'
+
+        # 附加详细分析
+        ri_wuxing = GAN_WUXING.get(ri_gan, '土')
+        detail = get_geju_analysis(ri_wuxing, month_zhi)
+        if detail:
+            geju_name = f"{geju_name}\n{detail}"
+
+        return geju_name
+
+    def _ss_to_geju_name(self, ss: str) -> str:
+        """十神转格局名"""
+        mapping = {
+            '财': '正财格', '才': '偏财格',
+            '官': '正官格', '杀': '七杀格',
+            '印': '正印格', '枭': '偏印格',
+            '食': '食神格', '伤': '伤官格',
+            '比': '建禄格', '劫': '阳刃格',
+        }
+        return mapping.get(ss, '')
 
 
 # 全局实例
