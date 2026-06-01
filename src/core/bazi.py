@@ -222,22 +222,42 @@ class BaziEngine:
 
     def _calc_wuxing_score(self, year_gz: str, month_gz: str,
                            day_gz: str, time_gz: str) -> dict:
-        """计算五行分数"""
+        """
+        计算五行分数（与 ref/bazi 一致）
+
+        规则：
+        1. 四柱天干各 5 分
+        2. 四柱地支藏干按精确权重
+        3. 月支额外再算一次（月令加权）
+        """
         score = {'金': 0, '木': 0, '水': 0, '火': 0, '土': 0}
 
-        # 天干各1分
-        for gz in [year_gz, month_gz, day_gz, time_gz]:
-            gan_wx = GAN_WUXING.get(gz[0], '土')
-            score[gan_wx] += 1
+        # 地支藏干权重（与 ref/bazi zhi5 一致）
+        ZHI_WEIGHTS = {
+            '子': [('癸', 8)],
+            '丑': [('己', 5), ('癸', 2), ('辛', 1)],
+            '寅': [('甲', 5), ('丙', 2), ('戊', 1)],
+            '卯': [('乙', 8)],
+            '辰': [('戊', 5), ('乙', 2), ('癸', 1)],
+            '巳': [('丙', 5), ('戊', 2), ('庚', 1)],
+            '午': [('丁', 5), ('己', 3)],
+            '未': [('己', 5), ('丁', 2), ('乙', 1)],
+            '申': [('庚', 5), ('壬', 2), ('戊', 1)],
+            '酉': [('辛', 8)],
+            '戌': [('戊', 5), ('辛', 2), ('丁', 1)],
+            '亥': [('壬', 5), ('甲', 3)],
+        }
 
-        # 地支藏干按权重
-        zhi_weights = {0: 5, 1: 2, 2: 1}  # 本气/中气/余气
+        # 天干各 5 分
         for gz in [year_gz, month_gz, day_gz, time_gz]:
-            zhi = gz[1]
-            canggan = ZHI_CANGGAN.get(zhi, [])
-            for i, gan in enumerate(canggan):
+            wx = GAN_WUXING.get(gz[0], '土')
+            score[wx] += 5
+
+        # 四柱地支 + 月支额外一次（月令加权）
+        zhis = [year_gz[1], month_gz[1], day_gz[1], time_gz[1], month_gz[1]]
+        for zhi in zhis:
+            for gan, weight in ZHI_WEIGHTS.get(zhi, []):
                 wx = GAN_WUXING.get(gan, '土')
-                weight = zhi_weights.get(i, 1)
                 score[wx] += weight
 
         return score
