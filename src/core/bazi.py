@@ -118,9 +118,10 @@ class BaziEngine:
         # 关系（冲合刑害）
         result.relations = self._calc_relations(year_gz, month_gz, day_gz, time_gz)
 
-        # 大运（传入日干用于十神计算）
+        # 大运（传入日干和四柱用于十神和关系计算）
         result.dayun = self._calc_dayun(gender, year_gz, month_gz,
-                                        birth_dt=birth_dt, ri_gan=day_gz[0])
+                                        birth_dt=birth_dt, ri_gan=day_gz[0],
+                                        day_gz=day_gz, time_gz=time_gz)
 
         # 神煞
         result.shenshas = self._calc_shenshas(day_gz[0], year_gz, month_gz, day_gz, time_gz)
@@ -291,7 +292,8 @@ class BaziEngine:
         return relations
 
     def _calc_dayun(self, gender: str, year_gz: str, month_gz: str,
-                    birth_dt=None, ri_gan: str = '') -> list:
+                    birth_dt=None, ri_gan: str = '',
+                    day_gz: str = '', time_gz: str = '') -> list:
         """
         计算大运
 
@@ -339,6 +341,11 @@ class BaziEngine:
         month_zhi_idx = DIZHI.index(month_gz[1])
         direction = 1 if forward else -1
 
+        # 四柱地支（用于判断流年冲合）
+        four_zhis = [year_gz[1], month_gz[1],
+                     day_gz[1] if len(day_gz) >= 2 else '',
+                     time_gz[1] if len(time_gz) >= 2 else '']
+
         # 出生年的天干地支索引（用于计算流年）
         year_gan_idx = TIANGAN.index(year_gz[0])
         year_zhi_idx = DIZHI.index(year_gz[1])
@@ -362,9 +369,13 @@ class BaziEngine:
             # 大运与四柱的关系
             dy_relations = []
             dy_zhi = DIZHI[zhi_idx]
-            # 这里简化：只检查冲
-            if ZHI_CHONG.get(dy_zhi):
-                dy_relations.append(f'冲{ZHI_CHONG[dy_zhi]}')
+            chong_target = ZHI_CHONG.get(dy_zhi, '')
+            if chong_target and chong_target in four_zhis:
+                dy_relations.append(f'冲{chong_target}')
+            for fz in four_zhis:
+                if fz and (dy_zhi, fz) in ZHI_LIUHE:
+                    dy_relations.append(f'合{fz}')
+                    break
 
             # 长生状态
             cs_map = CHANGSHENG.get(ri_gan, {}) if ri_gan else {}
@@ -385,10 +396,15 @@ class BaziEngine:
                 ln_nayin = NAYIN.get(ln_gz, '')
                 ln_cs = cs_map.get(ln_zhi, '')
 
-                # 流年与四柱的冲
+                # 流年与四柱的冲合
                 ln_relations = []
-                if ZHI_CHONG.get(ln_zhi):
-                    ln_relations.append(f'冲{ZHI_CHONG[ln_zhi]}')
+                chong_target = ZHI_CHONG.get(ln_zhi, '')
+                if chong_target and chong_target in four_zhis:
+                    ln_relations.append(f'冲{chong_target}')
+                for fz in four_zhis:
+                    if fz and (ln_zhi, fz) in ZHI_LIUHE:
+                        ln_relations.append(f'合{fz}')
+                        break
 
                 liunian.append({
                     'age': ln_age,
