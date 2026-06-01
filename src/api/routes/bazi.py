@@ -57,6 +57,7 @@ def bazi_paipan(req: BaziRequest):
         time_gz=bazi_info['time_gz'],
         lunar_str=bazi_info['lunar_str'],
         gregorian_str=dt.strftime('%Y-%m-%d %H:%M'),
+        birth_dt=dt,
     )
 
     return {

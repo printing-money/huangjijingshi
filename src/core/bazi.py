@@ -81,7 +81,7 @@ class BaziEngine:
 
     def calculate(self, gender: str, year_gz: str, month_gz: str,
                   day_gz: str, time_gz: str, lunar_str: str = '',
-                  gregorian_str: str = '') -> BaziResult:
+                  gregorian_str: str = '', birth_dt=None) -> BaziResult:
         """完整八字排盘"""
         result = BaziResult(
             gender=gender,
@@ -118,8 +118,9 @@ class BaziEngine:
         # 关系（冲合刑害）
         result.relations = self._calc_relations(year_gz, month_gz, day_gz, time_gz)
 
-        # 大运
-        result.dayun = self._calc_dayun(gender, year_gz, month_gz)
+        # 大运（传入日干用于十神计算）
+        result.dayun = self._calc_dayun(gender, year_gz, month_gz,
+                                        birth_dt=birth_dt, ri_gan=day_gz[0])
 
         # 神煞
         result.shenshas = self._calc_shenshas(day_gz[0], year_gz, month_gz, day_gz, time_gz)
@@ -289,33 +290,70 @@ class BaziEngine:
 
         return relations
 
-    def _calc_dayun(self, gender: str, year_gz: str, month_gz: str) -> list:
-        """计算大运（简化版：从月柱起排）"""
+    def _calc_dayun(self, gender: str, year_gz: str, month_gz: str,
+                    birth_dt=None, ri_gan: str = '') -> list:
+        """
+        计算大运
+
+        起运年龄 = 出生日到最近节气的天数 ÷ 3
+        阳男阴女顺排（数到下一节），阴男阳女逆排（数到上一节）
+        """
         year_gan = year_gz[0]
         is_yang = TIANGAN.index(year_gan) % 2 == 0
-
-        # 阳男阴女顺排，阴男阳女逆排
         forward = (gender == '男' and is_yang) or (gender == '女' and not is_yang)
 
+        # 计算起运年龄
+        start_age = 1  # 默认
+        if birth_dt:
+            try:
+                import cnlunar
+                a = cnlunar.Lunar(birth_dt, godType='8char')
+                jie_names = ['小寒', '立春', '惊蛰', '清明', '立夏', '芒种',
+                             '小暑', '立秋', '白露', '寒露', '立冬', '大雪']
+                birth_date = birth_dt.date() if hasattr(birth_dt, 'date') else birth_dt
+
+                if forward:
+                    # 顺排：到下一个节的天数
+                    days = a.nextSolarNum if a.nextSolarNum else 15
+                else:
+                    # 逆排：到上一个节的天数
+                    terms = a.thisYearSolarTermsDic
+                    prev_jie_date = None
+                    for name, d in sorted(terms.items(), key=lambda x: x[1]):
+                        if name in jie_names:
+                            term_date = d if isinstance(d, type(birth_date)) else \
+                                        type(birth_date)(birth_dt.year, d[0], d[1])
+                            if term_date <= birth_date:
+                                prev_jie_date = term_date
+                    if prev_jie_date:
+                        days = (birth_date - prev_jie_date).days
+                    else:
+                        days = 15
+
+                start_age = max(1, days // 3)
+            except Exception:
+                start_age = 5  # fallback
+
+        # 排大运干支
         month_gan_idx = TIANGAN.index(month_gz[0])
         month_zhi_idx = DIZHI.index(month_gz[1])
+        direction = 1 if forward else -1
 
         dayun = []
-        for i in range(1, 9):  # 8步大运
-            if forward:
-                gan_idx = (month_gan_idx + i) % 10
-                zhi_idx = (month_zhi_idx + i) % 12
-            else:
-                gan_idx = (month_gan_idx - i) % 10
-                zhi_idx = (month_zhi_idx - i) % 12
-
+        for i in range(1, 9):
+            gan_idx = (month_gan_idx + i * direction) % 10
+            zhi_idx = (month_zhi_idx + i * direction) % 12
             gz = TIANGAN[gan_idx] + DIZHI[zhi_idx]
-            start_age = i * 10  # 简化：每步10年
+            age = start_age + (i - 1) * 10
+
+            # 十神（用日干）
+            ss_map = SHISHEN.get(ri_gan, {}) if ri_gan else SHISHEN.get(year_gz[0], {})
+
             dayun.append({
                 'ganzhi': gz,
-                'start_age': start_age,
+                'start_age': age,
                 'nayin': NAYIN.get(gz, ''),
-                'shishen': SHISHEN.get(year_gz[0], {}).get(TIANGAN[gan_idx], ''),
+                'shishen': ss_map.get(TIANGAN[gan_idx], ''),
             })
 
         return dayun
