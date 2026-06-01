@@ -191,12 +191,35 @@ function renderResult(data) {
       </div>
     </div>
 
-    <!-- 大运 -->
+    <!-- 大运 + 流年 -->
     <div class="bazi-box">
-      <h2>大运</h2>
-      <div class="dayun-grid">
-        ${data.dayun.map(d => `<div class="dayun-item"><div class="age">${d.start_age}岁起</div><div class="gz">${d.ganzhi}</div><div style="font-size:0.6rem;color:#888;">${d.shishen||''}</div><div style="font-size:0.6rem;color:#666;">${d.nayin}</div></div>`).join('')}
-      </div>
+      <h2>大运 · 流年</h2>
+      ${data.dayun.map(d => `
+        <div style="margin-bottom:1.2rem;border:1px solid #333;border-radius:8px;overflow:hidden;">
+          <div style="background:#0f1923;padding:0.6rem 0.8rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+            <span><strong style="color:#4ecdc4;">${d.ganzhi}</strong> <span style="color:#e8a838;">${d.shishen}</span> <span style="color:#888;">${d.nayin}</span> <span style="color:#666;">${d.changsheng||''}</span></span>
+            <span style="font-size:0.75rem;color:#888;">${d.start_age}岁起 ▾</span>
+          </div>
+          <div style="display:none;padding:0.5rem;">
+            ${d.canggan ? `<div style="font-size:0.7rem;color:#888;margin-bottom:0.3rem;">藏干：${d.canggan.map(c=>`${c.gan}(${c.shishen})`).join(' ')}</div>` : ''}
+            ${d.relations && d.relations.length ? `<div style="font-size:0.7rem;color:#e94560;margin-bottom:0.3rem;">${d.relations.join(' ')}</div>` : ''}
+            <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+              <tr style="color:#888;"><th style="text-align:left;padding:0.2rem;">岁</th><th>年</th><th>干支</th><th>十神</th><th>纳音</th><th>长生</th><th>关系</th></tr>
+              ${d.liunian ? d.liunian.map(l => `
+                <tr style="border-top:1px solid #1a2a3a;">
+                  <td style="padding:0.2rem;color:#e8a838;">${l.age}</td>
+                  <td style="color:#888;">${l.year}</td>
+                  <td style="color:#4ecdc4;">${l.ganzhi}</td>
+                  <td>${l.gan_shishen}/${l.zhi_shishen}</td>
+                  <td style="color:#666;">${l.nayin}</td>
+                  <td style="color:#666;">${l.changsheng}</td>
+                  <td style="color:#e94560;font-size:0.65rem;">${l.relations?l.relations.join(' '):''}</td>
+                </tr>
+              `).join('') : ''}
+            </table>
+          </div>
+        </div>
+      `).join('')}
     </div>
   `;
 

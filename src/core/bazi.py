@@ -339,6 +339,11 @@ class BaziEngine:
         month_zhi_idx = DIZHI.index(month_gz[1])
         direction = 1 if forward else -1
 
+        # 出生年的天干地支索引（用于计算流年）
+        year_gan_idx = TIANGAN.index(year_gz[0])
+        year_zhi_idx = DIZHI.index(year_gz[1])
+        birth_year = birth_dt.year if birth_dt else 1990
+
         dayun = []
         for i in range(1, 9):
             gan_idx = (month_gan_idx + i * direction) % 10
@@ -349,11 +354,62 @@ class BaziEngine:
             # 十神（用日干）
             ss_map = SHISHEN.get(ri_gan, {}) if ri_gan else SHISHEN.get(year_gz[0], {})
 
+            # 大运地支藏干
+            dy_canggan = []
+            for cg in ZHI_CANGGAN.get(DIZHI[zhi_idx], []):
+                dy_canggan.append({'gan': cg, 'shishen': ss_map.get(cg, '')})
+
+            # 大运与四柱的关系
+            dy_relations = []
+            dy_zhi = DIZHI[zhi_idx]
+            # 这里简化：只检查冲
+            if ZHI_CHONG.get(dy_zhi):
+                dy_relations.append(f'冲{ZHI_CHONG[dy_zhi]}')
+
+            # 长生状态
+            cs_map = CHANGSHENG.get(ri_gan, {}) if ri_gan else {}
+            dy_changsheng = cs_map.get(DIZHI[zhi_idx], '')
+
+            # 10年流年详情
+            liunian = []
+            for y in range(10):
+                ln_age = age + y
+                ln_year = birth_year + ln_age - 1
+                ln_gan_idx = (year_gan_idx + ln_age - 1) % 10
+                ln_zhi_idx = (year_zhi_idx + ln_age - 1) % 12
+                ln_gan = TIANGAN[ln_gan_idx]
+                ln_zhi = DIZHI[ln_zhi_idx]
+                ln_gz = ln_gan + ln_zhi
+                ln_ss = ss_map.get(ln_gan, '')
+                ln_zhi_ss = ss_map.get(ZHI_CANGGAN.get(ln_zhi, [''])[0], '')
+                ln_nayin = NAYIN.get(ln_gz, '')
+                ln_cs = cs_map.get(ln_zhi, '')
+
+                # 流年与四柱的冲
+                ln_relations = []
+                if ZHI_CHONG.get(ln_zhi):
+                    ln_relations.append(f'冲{ZHI_CHONG[ln_zhi]}')
+
+                liunian.append({
+                    'age': ln_age,
+                    'year': ln_year,
+                    'ganzhi': ln_gz,
+                    'gan_shishen': ln_ss,
+                    'zhi_shishen': ln_zhi_ss,
+                    'nayin': ln_nayin,
+                    'changsheng': ln_cs,
+                    'relations': ln_relations,
+                })
+
             dayun.append({
                 'ganzhi': gz,
                 'start_age': age,
                 'nayin': NAYIN.get(gz, ''),
                 'shishen': ss_map.get(TIANGAN[gan_idx], ''),
+                'changsheng': dy_changsheng,
+                'canggan': dy_canggan,
+                'relations': dy_relations,
+                'liunian': liunian,
             })
 
         return dayun
