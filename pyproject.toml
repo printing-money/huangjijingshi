@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "皇极经世推演系统 - 基于邵雍《皇极经世书》的世界发展规律推演算法平台"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "MIT"
+license = "Apache-2.0 WITH Commons-Clause"
 
 dependencies = [
     "fastapi==0.115.6",

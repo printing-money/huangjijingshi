@@ -63,4 +63,10 @@ curl http://localhost:8000/api/analysis/trend/2024
 
 ## 许可证
 
-MIT License
+Apache 2.0 + Commons Clause
+
+- ✅ 个人学习、研究、非商业使用：自由
+- ✅ 修改、分发：允许（保留版权声明）
+- ❌ 商业用途（售卖、收费服务、商业集成）：需获得商业授权
+
+详见 [LICENSE](LICENSE)
