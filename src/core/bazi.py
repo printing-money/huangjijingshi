@@ -69,6 +69,12 @@ class BaziResult:
     # 日柱断语
     rizhu_duanyu: str = ''
 
+    # 扩展信息
+    canggan_detail: list = field(default_factory=list)   # 四柱藏干详情
+    changsheng_detail: list = field(default_factory=list) # 四柱长生状态
+    kongwang: list = field(default_factory=list)          # 空亡
+    liuqin: dict = field(default_factory=dict)           # 六亲
+    xingge: list = field(default_factory=list)           # 性格描述
 
 class BaziEngine:
     """八字排盘引擎"""
@@ -123,6 +129,72 @@ class BaziEngine:
 
         # 格局
         result.geju = self._calc_geju(result)
+
+        # === 扩展信息 ===
+        # 藏干详情
+        ri_gan = day_gz[0]
+        ss_map = SHISHEN.get(ri_gan, {})
+        for gz in [year_gz, month_gz, day_gz, time_gz]:
+            zhi = gz[1]
+            canggan = ZHI_CANGGAN.get(zhi, [])
+            detail = []
+            for gan in canggan:
+                wx = GAN_WUXING.get(gan, '')
+                ss = ss_map.get(gan, '')
+                detail.append({'gan': gan, 'wuxing': wx, 'shishen': ss})
+            result.canggan_detail.append({'zhi': zhi, 'canggan': detail})
+
+        # 长生状态
+        cs_map = CHANGSHENG.get(ri_gan, {})
+        for gz in [year_gz, month_gz, day_gz, time_gz]:
+            state = cs_map.get(gz[1], '')
+            result.changsheng_detail.append({'zhi': gz[1], 'state': state})
+
+        # 空亡（简化：以日柱查旬空）
+        day_gan_idx = TIANGAN.index(day_gz[0])
+        day_zhi_idx = DIZHI.index(day_gz[1])
+        xun_start = (day_zhi_idx - day_gan_idx) % 12
+        kong1 = DIZHI[(xun_start + 10) % 12]
+        kong2 = DIZHI[(xun_start + 11) % 12]
+        for gz in [year_gz, month_gz, day_gz, time_gz]:
+            if gz[1] in (kong1, kong2):
+                result.kongwang.append(gz[1])
+
+        # 六亲
+        result.liuqin = {
+            '父亲': '偏财' if TIANGAN.index(ri_gan) % 2 == 0 else '正财',
+            '母亲': '正印' if TIANGAN.index(ri_gan) % 2 == 0 else '偏印',
+            '配偶': '正财' if gender == '男' else '正官',
+            '子女': '正官' if gender == '女' else '食神',
+        }
+
+        # 性格描述（基于日主十神组合）
+        month_ss = result.shishen.get('月干', '') or result.shishen.get('月支', '')
+        xingge_map = {
+            '比': '自信独立，重义气，但固执己见。',
+            '劫': '积极进取，善交际，但争强好胜。',
+            '食': '温和聪慧，有才华，乐观开朗。',
+            '伤': '才华横溢，不拘一格，但叛逆不羁。',
+            '才': '勤劳务实，善理财，但过于精打细算。',
+            '财': '稳重踏实，重信用，人缘好。',
+            '杀': '果断刚毅，有魄力，但性急冲动。',
+            '官': '正直守规，有责任感，适合管理。',
+            '枭': '聪明多思，直觉强，但多疑孤僻。',
+            '印': '仁慈宽厚，好学习，受人尊重。',
+        }
+        if month_ss:
+            result.xingge.append(xingge_map.get(month_ss, ''))
+        # 日支十神性格补充
+        day_zhi_ss = result.shishen.get('日支', '')
+        day_zhi_map = {
+            '比': '配偶性格与自己相似。', '劫': '婚姻中易有竞争。',
+            '食': '家庭生活愉快。', '伤': '配偶有才但个性强。',
+            '才': '配偶能干，善持家。', '财': '配偶贤惠，助力事业。',
+            '杀': '配偶强势，婚姻有压力。', '官': '配偶正派，家庭稳定。',
+            '枭': '配偶聪明但关系需经营。', '印': '配偶关爱有加。',
+        }
+        if day_zhi_ss:
+            result.xingge.append(day_zhi_map.get(day_zhi_ss, ''))
 
         return result
 

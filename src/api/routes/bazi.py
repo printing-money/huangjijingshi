@@ -80,4 +80,9 @@ def bazi_paipan(req: BaziRequest):
         'shenshas': result.shenshas,
         'geju': result.geju,
         'rizhu_duanyu': result.rizhu_duanyu,
+        'canggan_detail': result.canggan_detail,
+        'changsheng_detail': result.changsheng_detail,
+        'kongwang': result.kongwang,
+        'liuqin': result.liuqin,
+        'xingge': result.xingge,
     }

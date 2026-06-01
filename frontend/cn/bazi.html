@@ -116,50 +116,86 @@ function renderResult(data) {
   const wx_colors = {'金':'#D4AF37','木':'#228B22','水':'#1E90FF','火':'#DC143C','土':'#CD853F'};
   const input = data.input;
   const pillars = input.bazi.split(' ');
+  const cs_names = {'长':'长生','沐':'沐浴','冠':'冠带','建':'临官','帝':'帝旺','衰':'衰','病':'病','死':'死','墓':'墓','绝':'绝','胎':'胎','养':'养'};
 
   let html = `
     <div class="bazi-box">
       <h2>四柱八字</h2>
-      <div style="text-align:center;font-size:0.8rem;color:#888;margin-bottom:0.8rem;">${input.lunar} · ${input.birth_time}</div>
+      <div style="text-align:center;font-size:0.8rem;color:#888;margin-bottom:0.8rem;">${input.lunar} · ${input.birth_time} · ${data.input.gender}</div>
       <div class="four-pillars">
         ${['年柱','月柱','日柱','时柱'].map((label, i) => {
           const gz = pillars[i] || '';
           const ss_key = i === 0 ? '年干' : i === 1 ? '月干' : i === 3 ? '时干' : '';
           const ss = ss_key ? (data.shishen[ss_key] || '') : '日主';
           const ny = data.nayin[['年','月','日','时'][i]] || '';
-          return `<div class="pillar"><div class="label">${label}</div><div class="gan">${gz[0]||''}</div><div class="zhi">${gz[1]||''}</div><div class="ss">${ss}</div><div class="ny">${ny}</div></div>`;
+          const cs = data.changsheng_detail[i] ? (cs_names[data.changsheng_detail[i].state] || data.changsheng_detail[i].state) : '';
+          const isKong = data.kongwang.includes(gz[1]);
+          return `<div class="pillar" ${isKong?'style="border:1px dashed #e94560;"':''}>
+            <div class="label">${label}${isKong?' 空':''}  </div>
+            <div class="gan">${gz[0]||''}</div>
+            <div class="zhi">${gz[1]||''}</div>
+            <div class="ss">${ss}</div>
+            <div class="ny">${ny}</div>
+            <div style="font-size:0.6rem;color:#4ecdc4;margin-top:0.2rem;">${cs}</div>
+          </div>`;
         }).join('')}
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:1rem 0 0.5rem;">
-        <span style="font-size:0.8rem;">五行分数</span>
+      <!-- 藏干 -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;margin-top:0.8rem;">
+        ${data.canggan_detail.map((item, i) => `
+          <div style="background:#0f1923;border-radius:6px;padding:0.4rem;font-size:0.7rem;text-align:center;">
+            <div style="color:#888;">藏干</div>
+            ${item.canggan.map(c => `<div><span style="color:#e8a838;">${c.gan}</span><span style="color:#666;">${c.wuxing}</span> <span style="color:#4ecdc4;">${c.shishen}</span></div>`).join('')}
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:1.2rem 0 0.5rem;">
+        <span style="font-size:0.8rem;">五行力量</span>
         <span style="font-size:0.8rem;color:${data.day_master.is_strong?'#e94560':'#4ecdc4'};">${data.day_master.strength}（日主${data.day_master.gan}${data.day_master.wuxing}）</span>
       </div>
       <div class="wuxing-bar">
         ${Object.entries(data.wuxing_score).map(([wx, score]) => {
           const total = Object.values(data.wuxing_score).reduce((a,b)=>a+b,0);
-          const pct = Math.round(score/total*100);
+          const pct = Math.max(8, Math.round(score/total*100));
           return `<div style="width:${pct}%;background:${wx_colors[wx]}">${wx}${score}</div>`;
         }).join('')}
       </div>
     </div>
 
+    <!-- 性格 + 六亲 -->
+    <div class="bazi-box">
+      <h2>性格 · 六亲</h2>
+      ${data.xingge.length ? `<div style="font-size:0.85rem;line-height:1.8;color:#ccc;margin-bottom:0.8rem;">${data.xingge.join(' ')}</div>` : ''}
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;">
+        ${Object.entries(data.liuqin).map(([rel, ss]) => `
+          <div style="background:#0f1923;border-radius:6px;padding:0.5rem;font-size:0.8rem;">
+            <span style="color:#e8a838;">${rel}</span>：看${ss}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- 格局 · 关系 · 神煞 -->
     <div class="bazi-box">
       <h2>格局 · 关系 · 神煞</h2>
-      <div style="margin-bottom:0.5rem;"><span style="color:#e8a838;">格局：</span>${data.geju}</div>
-      ${data.rizhu_duanyu ? `<div style="margin-bottom:0.8rem;font-size:0.8rem;color:#ccc;border-left:3px solid #e8a838;padding-left:0.8rem;">${data.rizhu_duanyu}</div>` : ''}
+      <div style="margin-bottom:0.5rem;font-size:0.9rem;"><span style="color:#e8a838;">格局：</span><strong>${data.geju}</strong></div>
+      ${data.rizhu_duanyu ? `<div style="margin-bottom:0.8rem;font-size:0.85rem;color:#ccc;border-left:3px solid #e8a838;padding-left:0.8rem;line-height:1.7;">日柱断语：${data.rizhu_duanyu}</div>` : ''}
+      ${data.kongwang.length ? `<div style="margin-bottom:0.5rem;font-size:0.8rem;"><span style="color:#e94560;">空亡：</span>${data.kongwang.join('、')}</div>` : ''}
       <div class="tags">
-        ${data.relations.map(r => `<span class="tag ${r.includes('冲')?'warn':r.includes('合')?'gold':''}">${r}</span>`).join('')}
+        ${data.relations.map(r => `<span class="tag ${r.includes('冲')?'warn':r.includes('刑')?'warn':r.includes('害')?'warn':r.includes('合')?'gold':''}">${r}</span>`).join('')}
       </div>
       <div class="tags" style="margin-top:0.5rem;">
         ${data.shenshas.map(s => `<span class="tag gold">${s}</span>`).join('')}
       </div>
     </div>
 
+    <!-- 大运 -->
     <div class="bazi-box">
       <h2>大运</h2>
       <div class="dayun-grid">
-        ${data.dayun.map(d => `<div class="dayun-item"><div class="age">${d.start_age}岁起</div><div class="gz">${d.ganzhi}</div><div style="font-size:0.6rem;color:#666;">${d.nayin}</div></div>`).join('')}
+        ${data.dayun.map(d => `<div class="dayun-item"><div class="age">${d.start_age}岁起</div><div class="gz">${d.ganzhi}</div><div style="font-size:0.6rem;color:#888;">${d.shishen||''}</div><div style="font-size:0.6rem;color:#666;">${d.nayin}</div></div>`).join('')}
       </div>
     </div>
   `;
